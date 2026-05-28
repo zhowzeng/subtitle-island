@@ -12,10 +12,17 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "Subtitle Island",
-        "width": 800,
-        "height": 600,
+        "width": 720,
+        "height": 260,
+        "minWidth": 420,
+        "minHeight": 180,
         "resizable": true,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
         "fullscreen": false
       }
     ],
