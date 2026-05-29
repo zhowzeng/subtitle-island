@@ -1,13 +1,13 @@
 {
-  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "$schema": "https://schema.tauri.app/config/2",
   "productName": "subtitle-island",
   "version": "0.1.0",
-  "identifier": "com.tauri.dev",
+  "identifier": "com.zengl.subtitleisland",
   "build": {
-    "frontendDist": "../build",
-    "devUrl": "http://localhost:5173",
     "beforeDevCommand": "bun run dev",
-    "beforeBuildCommand": "bun run build"
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "bun run build",
+    "frontendDist": "../build"
   },
   "app": {
     "windows": [
@@ -39,9 +39,6 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ],
-    "android": {
-      "debugApplicationIdSuffix": ".debug"
-    }
+    ]
   }
 }
