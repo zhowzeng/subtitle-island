@@ -104,6 +104,17 @@ fn stop_session(state: State<'_, Mutex<SessionState>>) -> Result<(), String> {
   Ok(())
 }
 
+#[tauri::command]
+fn close_window(window: tauri::WebviewWindow, state: State<'_, Mutex<SessionState>>) -> Result<(), String> {
+  stop_session(state)?;
+  window.close().map_err(|error| error.to_string())
+}
+
+#[tauri::command]
+fn start_window_drag(window: tauri::WebviewWindow) -> Result<(), String> {
+  window.start_dragging().map_err(|error| error.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -122,7 +133,12 @@ pub fn run() {
       }
       Ok(())
     })
-    .invoke_handler(tauri::generate_handler![start_session, stop_session])
+    .invoke_handler(tauri::generate_handler![
+      start_session,
+      stop_session,
+      close_window,
+      start_window_drag
+    ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }

@@ -39,6 +39,8 @@ button {
 	background: rgb(10 15 20 / 0.78);
 	box-shadow: 0 18px 60px rgb(0 0 0 / 0.34);
 	backdrop-filter: blur(18px);
+	cursor: grab;
+	user-select: none;
 }
 
 .status-row,
@@ -47,6 +49,10 @@ button {
 	align-items: center;
 	justify-content: space-between;
 	gap: 12px;
+}
+
+.subtitle-island:active {
+	cursor: grabbing;
 }
 
 .status-pill {
@@ -81,6 +87,31 @@ button {
 .source-label {
 	color: #9fb0ba;
 	font-size: 12px;
+}
+
+.window-actions {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.window-close {
+	display: inline-grid;
+	width: 28px;
+	height: 28px;
+	place-items: center;
+	border: 1px solid rgb(255 255 255 / 0.16);
+	border-radius: 6px;
+	color: #d9e8ee;
+	background: rgb(255 255 255 / 0.08);
+	cursor: pointer;
+	line-height: 1;
+}
+
+.window-close:hover {
+	color: #ffffff;
+	background: rgb(255 107 95 / 0.28);
+	border-color: rgb(255 107 95 / 0.42);
 }
 
 .subtitle-lines {

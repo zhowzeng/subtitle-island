@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { invoke } from '@tauri-apps/api/core';
+	import { invoke, isTauri } from '@tauri-apps/api/core';
 	import { listen } from '@tauri-apps/api/event';
 	import { onMount } from 'svelte';
 
@@ -28,7 +28,7 @@
 		'Start and stop control the session state.'
 	];
 
-	const isTauriRuntime = () => typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+	const isTauriRuntime = () => typeof window !== 'undefined' && isTauri();
 
 	function pushTranscript(segment: TranscriptSegment) {
 		transcriptLines = [...transcriptLines, segment].slice(-2);
@@ -100,6 +100,29 @@
 		sessionState = 'idle';
 	}
 
+	async function closeApp() {
+		try {
+			await invoke('close_window');
+		} catch (error) {
+			errorMessage = error instanceof Error ? error.message : String(error);
+			sessionState = 'error';
+		}
+	}
+
+	async function startWindowDrag(event: PointerEvent) {
+		const target = event.target instanceof Element ? event.target : undefined;
+
+		if (event.button !== 0 || target?.closest('button, a, input, textarea, select')) {
+			return;
+		}
+
+		event.preventDefault();
+		await invoke('start_window_drag').catch((error) => {
+			errorMessage = error instanceof Error ? error.message : String(error);
+			sessionState = 'error';
+		});
+	}
+
 	onMount(() => {
 		if (!isTauriRuntime()) {
 			return;
@@ -129,13 +152,21 @@
 </svelte:head>
 
 <main class="island-shell" data-state={sessionState}>
-	<section class="subtitle-island" aria-label="Subtitle island">
-		<div class="status-row">
+	<section
+		class="subtitle-island"
+		aria-label="Subtitle island"
+		data-tauri-drag-region
+		onpointerdown={startWindowDrag}
+	>
+		<div class="status-row" role="group" aria-label="Window controls">
 			<div class="status-pill">
 				<span class="status-dot"></span>
 				<span>{sessionState === 'listening' ? 'Listening' : sessionState === 'error' ? 'Error' : 'Idle'}</span>
 			</div>
-			<span class="source-label">Microphone</span>
+			<div class="window-actions">
+				<span class="source-label">Microphone</span>
+				<button class="window-close" type="button" aria-label="Close app" onclick={closeApp}>X</button>
+			</div>
 		</div>
 
 		<div class="subtitle-lines" aria-live="polite">
