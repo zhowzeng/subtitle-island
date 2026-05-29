@@ -15,11 +15,24 @@
 		timestamp: number;
 	};
 
+	type AudioActivity = {
+		level: number;
+		peak: number;
+		timestamp: number;
+	};
+
+	type SessionError = {
+		message: string;
+	};
+
 	let sessionState: SessionState = $state('idle');
 	let transcriptLines: TranscriptSegment[] = $state([]);
 	let errorMessage = $state('');
+	let audioLevel = $state(0);
 	let localMockTimer: ReturnType<typeof setInterval> | undefined = $state();
 	let unlistenTranscript: (() => void) | undefined;
+	let unlistenAudioActivity: (() => void) | undefined;
+	let unlistenSessionError: (() => void) | undefined;
 
 	const fallbackLines = [
 		'Testing the subtitle island layout.',
@@ -37,6 +50,8 @@
 	function startLocalMock() {
 		let index = 0;
 
+		audioLevel = 0.28;
+
 		pushTranscript({
 			id: `local-${Date.now()}`,
 			source: 'mic',
@@ -48,6 +63,7 @@
 
 		localMockTimer = setInterval(() => {
 			index = (index + 1) % fallbackLines.length;
+			audioLevel = 0.18 + (index % 3) * 0.2;
 			pushTranscript({
 				id: `local-${Date.now()}`,
 				source: 'mic',
@@ -64,11 +80,13 @@
 			clearInterval(localMockTimer);
 			localMockTimer = undefined;
 		}
+		audioLevel = 0;
 	}
 
 	async function startSession() {
 		errorMessage = '';
 		transcriptLines = [];
+		audioLevel = 0;
 		sessionState = 'listening';
 
 		if (!isTauriRuntime()) {
@@ -98,6 +116,7 @@
 		}
 
 		sessionState = 'idle';
+		audioLevel = 0;
 	}
 
 	async function closeApp() {
@@ -139,10 +158,36 @@
 				errorMessage = error instanceof Error ? error.message : String(error);
 			});
 
+		listen<AudioActivity>('audio-activity', (event) => {
+			audioLevel = Math.max(0, Math.min(event.payload.level, 1));
+		})
+			.then((unlisten) => {
+				unlistenAudioActivity = unlisten;
+			})
+			.catch((error) => {
+				sessionState = 'error';
+				errorMessage = error instanceof Error ? error.message : String(error);
+			});
+
+		listen<SessionError>('session-error', (event) => {
+			sessionState = 'error';
+			errorMessage = event.payload.message;
+			audioLevel = 0;
+		})
+			.then((unlisten) => {
+				unlistenSessionError = unlisten;
+			})
+			.catch((error) => {
+				sessionState = 'error';
+				errorMessage = error instanceof Error ? error.message : String(error);
+			});
+
 		return () => {
 			stopLocalMock();
 			void invoke('stop_session').catch(() => undefined);
 			unlistenTranscript?.();
+			unlistenAudioActivity?.();
+			unlistenSessionError?.();
 		};
 	});
 </script>
@@ -164,9 +209,13 @@
 				<span>{sessionState === 'listening' ? 'Listening' : sessionState === 'error' ? 'Error' : 'Idle'}</span>
 			</div>
 			<div class="window-actions">
-				<span class="source-label">Microphone</span>
+				<span class="source-label">Mic {Math.round(audioLevel * 100)}%</span>
 				<button class="window-close" type="button" aria-label="Close app" onclick={closeApp}>X</button>
 			</div>
+		</div>
+
+		<div class="audio-meter" aria-label="Microphone activity">
+			<span style:transform={`scaleX(${audioLevel})`}></span>
 		</div>
 
 		<div class="subtitle-lines" aria-live="polite">

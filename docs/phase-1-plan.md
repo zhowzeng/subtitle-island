@@ -12,7 +12,7 @@ Phase 1 is not expected to support translation, system audio capture, bilingual 
 
 ## Current Progress
 
-Status: Milestones 1-3 are complete.
+Status: Milestones 1-4 are complete.
 
 Completed implementation:
 
@@ -138,6 +138,8 @@ Result:
 
 ## Milestone 4: Microphone Capture
 
+Status: Complete.
+
 Replace mocked backend activity with real microphone capture.
 
 ### Scope
@@ -153,6 +155,14 @@ Replace mocked backend activity with real microphone capture.
 - Start a session and speak into the microphone.
 - Verify audio activity changes when speaking.
 - Stop the session and verify capture stops without hanging.
+
+Result:
+
+- Rust starts a `cpal` stream from the default input device when the session starts.
+- The backend emits `audio-activity` events with a simple RMS level and peak signal.
+- Svelte shows the current microphone activity as a compact meter.
+- Stop drops the capture stream through the session worker and returns the UI to Idle.
+- Browser development mode keeps mocked transcript lines and mocked meter activity for local UI checks.
 
 ## Milestone 5: Realtime Transcription
 

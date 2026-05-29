@@ -31,7 +31,7 @@ button {
 	width: min(100%, 680px);
 	min-height: 196px;
 	display: grid;
-	grid-template-rows: auto 1fr auto;
+	grid-template-rows: auto auto 1fr auto;
 	gap: 14px;
 	padding: 18px 20px;
 	border: 1px solid rgb(255 255 255 / 0.18);
@@ -112,6 +112,23 @@ button {
 	color: #ffffff;
 	background: rgb(255 107 95 / 0.28);
 	border-color: rgb(255 107 95 / 0.42);
+}
+
+.audio-meter {
+	height: 5px;
+	overflow: hidden;
+	border-radius: 999px;
+	background: rgb(255 255 255 / 0.1);
+}
+
+.audio-meter span {
+	display: block;
+	width: 100%;
+	height: 100%;
+	border-radius: inherit;
+	background: linear-gradient(90deg, #2ce38b, #c8f05f);
+	transform-origin: left center;
+	transition: transform 120ms ease;
 }
 
 .subtitle-lines {
