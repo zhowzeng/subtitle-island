@@ -7,10 +7,10 @@
 
 	type TranscriptSegment = {
 		id: string;
-		source: 'mic' | 'system';
+		audioSource: 'microphone' | 'system';
 		text: string;
 		translation?: string;
-		language: string;
+		sourceLanguage: string;
 		isFinal: boolean;
 		timestamp: number;
 	};
@@ -54,9 +54,9 @@
 
 		pushTranscript({
 			id: `local-${Date.now()}`,
-			source: 'mic',
+			audioSource: 'microphone',
 			text: fallbackLines[index],
-			language: 'en',
+			sourceLanguage: 'en',
 			isFinal: false,
 			timestamp: Date.now()
 		});
@@ -66,9 +66,9 @@
 			audioLevel = 0.18 + (index % 3) * 0.2;
 			pushTranscript({
 				id: `local-${Date.now()}`,
-				source: 'mic',
+				audioSource: 'microphone',
 				text: fallbackLines[index],
-				language: 'en',
+				sourceLanguage: 'en',
 				isFinal: index % 2 === 0,
 				timestamp: Date.now()
 			});
@@ -209,7 +209,7 @@
 				<span>{sessionState === 'listening' ? 'Listening' : sessionState === 'error' ? 'Error' : 'Idle'}</span>
 			</div>
 			<div class="window-actions">
-				<span class="source-label">Mic {Math.round(audioLevel * 100)}%</span>
+				<span class="audio-source-label">Microphone {Math.round(audioLevel * 100)}%</span>
 				<button class="window-close" type="button" aria-label="Close app" onclick={closeApp}>X</button>
 			</div>
 		</div>

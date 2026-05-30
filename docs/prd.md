@@ -380,7 +380,7 @@ Subtitle Renderer
 ## Translation
 
 * auto translate
-* target language
+* subtitle display mode
 
 ## UI
 
@@ -429,10 +429,10 @@ Keep terminology concise and subtitle-friendly.
 ```ts
 type TranscriptSegment = {
   id: string
-  source: 'mic' | 'system'
+  audioSource: 'microphone' | 'system'
   text: string
   translation?: string
-  language: string
+  sourceLanguage: string
   isFinal: boolean
   timestamp: number
 }
