@@ -73,11 +73,15 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 - Communicate with the user in Traditional Chinese; keep technical terms in English. Code comments should be written in English.
 
+# Project Guidelines
+
+- When adding features, consider the Tauri architecture boundary in [docs/tauri-architecture-boundary.md](docs/tauri-architecture-boundary.md).
+- Follow [docs/dependency-management.md](docs/dependency-management.md) when installing or updating TypeScript/Rust dependencies.
+
 # Project Commands
 
 - Use Bun for project scripts: `bun run check`, `bun run tauri dev`, and `bun run tauri build`.
 - Do not use npm/npx/pnpm/yarn for this project unless the user explicitly asks.
-- Follow [docs/dependency-management.md](docs/dependency-management.md) when installing or updating TypeScript/Rust dependencies.
 - For `src-tauri`, use Cargo directly from `src-tauri/`:
   - `cargo check --locked`
   - `cargo test --locked`
