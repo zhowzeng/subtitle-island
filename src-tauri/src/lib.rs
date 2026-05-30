@@ -699,6 +699,8 @@ fn start_session(
     app: tauri::AppHandle,
     state: State<'_, Mutex<SessionState>>,
 ) -> Result<(), String> {
+    join_finished_worker(&state)?;
+
     let mut session = state
         .lock()
         .map_err(|_| "Session state is unavailable.".to_string())?;
@@ -790,6 +792,35 @@ fn start_session(
             join_starting_worker(&state, &running);
             return Err("Microphone capture worker stopped unexpectedly.".to_string());
         }
+    }
+
+    Ok(())
+}
+
+fn join_finished_worker(state: &State<'_, Mutex<SessionState>>) -> Result<(), String> {
+    let worker = {
+        let mut session = state
+            .lock()
+            .map_err(|_| "Session state is unavailable.".to_string())?;
+
+        if session
+            .worker
+            .as_ref()
+            .is_some_and(|worker| worker.handle.is_finished())
+        {
+            session.worker.take()
+        } else {
+            None
+        }
+    };
+
+    if let Some(worker) = worker {
+        worker.running.store(false, Ordering::SeqCst);
+        worker.handle.join().map_err(|_| {
+            let message = "Microphone capture worker stopped unexpectedly.".to_string();
+            log_session_error(&message);
+            message
+        })?;
     }
 
     Ok(())

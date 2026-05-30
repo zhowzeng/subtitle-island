@@ -30,6 +30,37 @@
 		'Start and stop control the session state.'
 	];
 
+	function statusTitle() {
+		if (sessionState === 'starting') return 'Starting';
+		if (sessionState === 'listening') return 'Listening';
+		if (sessionState === 'error') return 'Needs attention';
+		return 'Idle';
+	}
+
+	function statusDetail() {
+		if (sessionState === 'starting') return 'Connecting API';
+		if (sessionState === 'listening') return `Microphone ${Math.round(audioLevel * 100)}% - API connected`;
+		if (sessionState === 'error') return 'Session stopped';
+		return 'Microphone ready';
+	}
+
+	function conciseErrorMessage(message: string) {
+		const trimmed = message.trim();
+
+		if (!trimmed) return 'Subtitle session failed.';
+		if (trimmed.includes('OPENAI_API_KEY')) return 'Missing OpenAI API key.';
+		if (trimmed.includes('default microphone')) return 'No default microphone was found.';
+		if (trimmed.includes('microphone') || trimmed.includes('Microphone')) {
+			return 'Microphone capture failed.';
+		}
+		if (trimmed.includes('OpenAI Realtime') || trimmed.includes('Realtime')) {
+			return 'Could not connect to the transcription API.';
+		}
+		if (trimmed.length > 96) return `${trimmed.slice(0, 93)}...`;
+
+		return trimmed;
+	}
+
 	function pushTranscript(segment: TranscriptSegment) {
 		const existingIndex = transcriptLines.findIndex((line) => line.id === segment.id);
 
@@ -94,7 +125,7 @@
 			sessionState = 'listening';
 		} catch (error) {
 			sessionState = 'error';
-			errorMessage = error instanceof Error ? error.message : String(error);
+			errorMessage = conciseErrorMessage(error instanceof Error ? error.message : String(error));
 		}
 	}
 
@@ -106,7 +137,7 @@
 				await stopSubtitleSession();
 			} catch (error) {
 				sessionState = 'error';
-				errorMessage = error instanceof Error ? error.message : String(error);
+				errorMessage = conciseErrorMessage(error instanceof Error ? error.message : String(error));
 				return;
 			}
 		}
@@ -119,7 +150,7 @@
 		try {
 			await closeSubIs();
 		} catch (error) {
-			errorMessage = error instanceof Error ? error.message : String(error);
+			errorMessage = conciseErrorMessage(error instanceof Error ? error.message : String(error));
 			sessionState = 'error';
 		}
 	}
@@ -133,7 +164,7 @@
 
 		event.preventDefault();
 		await beginSubtitleIslandDrag().catch((error) => {
-			errorMessage = error instanceof Error ? error.message : String(error);
+			errorMessage = conciseErrorMessage(error instanceof Error ? error.message : String(error));
 			sessionState = 'error';
 		});
 	}
@@ -151,7 +182,7 @@
 			})
 			.catch((error) => {
 				sessionState = 'error';
-				errorMessage = error instanceof Error ? error.message : String(error);
+				errorMessage = conciseErrorMessage(error instanceof Error ? error.message : String(error));
 			});
 
 		listenForAudioActivity((activity) => {
@@ -162,12 +193,12 @@
 			})
 			.catch((error) => {
 				sessionState = 'error';
-				errorMessage = error instanceof Error ? error.message : String(error);
+				errorMessage = conciseErrorMessage(error instanceof Error ? error.message : String(error));
 			});
 
 		listenForSessionErrors((error) => {
 			sessionState = 'error';
-			errorMessage = error.message;
+			errorMessage = conciseErrorMessage(error.message);
 			audioLevel = 0;
 		})
 			.then((unlisten) => {
@@ -175,7 +206,7 @@
 			})
 			.catch((error) => {
 				sessionState = 'error';
-				errorMessage = error instanceof Error ? error.message : String(error);
+				errorMessage = conciseErrorMessage(error instanceof Error ? error.message : String(error));
 			});
 
 		return () => {
@@ -202,18 +233,18 @@
 		<div class="status-row" role="group" aria-label="Window controls">
 			<div class="status-pill">
 				<span class="status-dot"></span>
-				<span
-					>{sessionState === 'starting'
-						? 'Starting'
-						: sessionState === 'listening'
-							? 'Listening'
-							: sessionState === 'error'
-								? 'Error'
-								: 'Idle'}</span
-				>
+				<span>{statusTitle()}</span>
 			</div>
 			<div class="window-actions">
-				<span class="audio-source-label">Microphone {Math.round(audioLevel * 100)}%</span>
+				<span class="audio-source-label">{statusDetail()}</span>
+				<div class="control-row" aria-label="Session controls">
+					<button
+						type="button"
+						onclick={startSession}
+						disabled={sessionState === 'starting' || sessionState === 'listening'}>Start</button
+					>
+					<button type="button" onclick={stopSession} disabled={sessionState === 'idle'}>Stop</button>
+				</div>
 				<button class="window-close" type="button" aria-label="Close app" onclick={closeApp}>X</button>
 			</div>
 		</div>
@@ -234,13 +265,5 @@
 			{/if}
 		</div>
 
-		<div class="control-row">
-			<button
-				type="button"
-				onclick={startSession}
-				disabled={sessionState === 'starting' || sessionState === 'listening'}>Start</button
-			>
-			<button type="button" onclick={stopSession} disabled={sessionState === 'idle'}>Stop</button>
-		</div>
 	</section>
 </main>

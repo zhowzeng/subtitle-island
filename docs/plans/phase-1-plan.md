@@ -12,7 +12,7 @@ Phase 1 is not expected to support translation, system audio capture, bilingual 
 
 ## Current Progress
 
-Status: Milestones 1-5 are complete.
+Status: Milestones 1-6 are complete.
 
 Completed implementation:
 
@@ -206,6 +206,8 @@ Result:
 
 ## Milestone 6: Phase 1 Hardening
 
+Status: Complete.
+
 Only add polish needed to make the first version usable.
 
 ### Scope
@@ -221,6 +223,15 @@ Only add polish needed to make the first version usable.
 - Run the app for a longer manual test session.
 - Verify Start/Stop can be repeated.
 - Verify the UI remains readable while other desktop windows are active.
+
+Result:
+
+- The subtitle island now shows clearer session and API/microphone status: starting sessions show API connection progress, listening sessions show microphone activity and API connection state, and errors show that the session stopped.
+- Frontend error display now shortens common missing API key, missing microphone, microphone capture, and Realtime connection failures into concise user-facing messages.
+- The frontend still keeps only the latest two subtitle lines visible and does not persist transcript text.
+- The backend clears finished session workers before starting a new session, so Start can be used again after a Realtime/API error ends the worker.
+- Automated checks passed: `bun run check`, `cargo fmt --check`, `cargo check --locked`, `cargo test --locked`, and `cargo clippy --all-targets --all-features --locked -- -D warnings`.
+- Longer manual verification passed: Start/Stop can be repeated, live subtitles remain readable, and the subtitle island remains usable over other desktop windows.
 
 ## Recommended First Implementation Slice
 
