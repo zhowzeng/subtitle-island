@@ -1,10 +1,10 @@
-# Subtitle Island PRD
+# SubIs PRD
 
 ## 1. Product Overview
 
 ### Product Name
 
-Subtitle Island
+SubIs
 
 ### Product Vision
 
@@ -553,4 +553,3 @@ Mixed-language speech quality
 * stream overlay mode
 * multilingual translation
 * mobile companion app
-

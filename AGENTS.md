@@ -75,6 +75,8 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 # Project Guidelines
 
+- Use [CONTEXT.md](CONTEXT.md) as the canonical product glossary. When naming domain concepts in code or docs, prefer the terms defined there; update it when a product term is resolved or renamed.
+- Review existing ADRs in [docs/adr/](docs/adr/) before changing architecture, data retention, Tauri boundaries, provider strategy, or other hard-to-reverse decisions. Add a new ADR only when the decision is hard to reverse, surprising without context, and the result of a real trade-off.
 - When adding features, consider the Tauri architecture boundary in [docs/tauri-architecture-boundary.md](docs/tauri-architecture-boundary.md).
 - Follow [docs/dependency-management.md](docs/dependency-management.md) when installing or updating TypeScript/Rust dependencies.
 
