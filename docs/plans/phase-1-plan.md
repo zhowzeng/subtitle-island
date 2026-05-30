@@ -12,7 +12,7 @@ Phase 1 is not expected to support translation, system audio capture, bilingual 
 
 ## Current Progress
 
-Status: Milestones 1-4 are complete.
+Status: Milestones 1-5 are complete.
 
 Completed implementation:
 
@@ -166,15 +166,21 @@ Result:
 
 ## Milestone 5: Realtime Transcription
 
+Status: Complete.
+
 Connect microphone chunks to OpenAI Realtime transcription.
 
 ### Scope
 
-- Read the OpenAI API key from environment or a minimal local configuration path.
-- Open a Realtime transcription websocket session.
-- Stream microphone PCM chunks.
-- Receive partial and final transcript events.
-- Emit transcript updates to the frontend.
+- Read the OpenAI API key from `OPENAI_API_KEY`.
+- Support a root `.env` file as a development override for `OPENAI_API_KEY`.
+- Open an OpenAI Realtime transcription websocket session with `gpt-realtime-whisper`.
+- Use manual audio commits based on local speech and silence timing.
+- Normalize microphone audio to 24 kHz mono PCM before streaming.
+- Stream microphone PCM chunks to the Realtime session.
+- Receive input audio transcription delta and completed events.
+- Emit partial and final transcript updates to the frontend, replacing partial text with final text for the same transcript segment.
+- Show a UI-only starting state while the backend opens the transcription session.
 
 ### Verification
 
@@ -182,6 +188,21 @@ Connect microphone chunks to OpenAI Realtime transcription.
 - Confirm partial text updates before final text when available.
 - Confirm missing API key and connection errors are shown in the UI.
 - Check observed latency against the Phase 1 target.
+
+### Decisions
+
+- Do not add a provider abstraction yet. Milestone 5 supports OpenAI Realtime only; future Google support can introduce an abstraction once there is a real second provider.
+- Do not add automatic reconnect yet. Connection and API errors stop the session and surface a session error so the user can restart.
+- Do not persist transcript history. Transcript text remains ephemeral session display data.
+- Do not add a new ADR for audio normalization or Realtime wiring because these choices follow the existing backend boundary ADR and are reversible implementation details.
+
+Result:
+
+- Rust loads `OPENAI_API_KEY`, with root `.env` overriding the process environment when present.
+- The backend opens an OpenAI Realtime transcription websocket session, streams microphone audio as 24 kHz mono PCM, and emits input audio transcription delta/completed events as transcript updates.
+- Svelte shows a starting state while the backend opens the Realtime session and replaces partial transcript text with final text for the same transcript segment.
+- Automated checks pass.
+- Manual Realtime transcription verification passed with a valid OpenAI API key and microphone input: subtitles appeared, partial transcript text reached a final state, missing API key and connection errors were visible, and observed latency was acceptable for the Phase 1 target.
 
 ## Milestone 6: Phase 1 Hardening
 

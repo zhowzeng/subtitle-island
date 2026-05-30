@@ -12,7 +12,7 @@
 		type TranscriptSegment
 	} from '$lib/tauri';
 
-	type SessionState = 'idle' | 'listening' | 'error';
+	type SessionState = 'idle' | 'starting' | 'listening' | 'error';
 
 	let sessionState: SessionState = $state('idle');
 	let transcriptLines: TranscriptSegment[] = $state([]);
@@ -31,7 +31,14 @@
 	];
 
 	function pushTranscript(segment: TranscriptSegment) {
-		transcriptLines = [...transcriptLines, segment].slice(-2);
+		const existingIndex = transcriptLines.findIndex((line) => line.id === segment.id);
+
+		if (existingIndex === -1) {
+			transcriptLines = [...transcriptLines, segment].slice(-2);
+			return;
+		}
+
+		transcriptLines = transcriptLines.map((line, index) => (index === existingIndex ? segment : line));
 	}
 
 	function startLocalMock() {
@@ -74,15 +81,17 @@
 		errorMessage = '';
 		transcriptLines = [];
 		audioLevel = 0;
-		sessionState = 'listening';
+		sessionState = 'starting';
 
 		if (!isTauriRuntime()) {
+			sessionState = 'listening';
 			startLocalMock();
 			return;
 		}
 
 		try {
 			await startSubtitleSession();
+			sessionState = 'listening';
 		} catch (error) {
 			sessionState = 'error';
 			errorMessage = error instanceof Error ? error.message : String(error);
@@ -193,7 +202,15 @@
 		<div class="status-row" role="group" aria-label="Window controls">
 			<div class="status-pill">
 				<span class="status-dot"></span>
-				<span>{sessionState === 'listening' ? 'Listening' : sessionState === 'error' ? 'Error' : 'Idle'}</span>
+				<span
+					>{sessionState === 'starting'
+						? 'Starting'
+						: sessionState === 'listening'
+							? 'Listening'
+							: sessionState === 'error'
+								? 'Error'
+								: 'Idle'}</span
+				>
 			</div>
 			<div class="window-actions">
 				<span class="audio-source-label">Microphone {Math.round(audioLevel * 100)}%</span>
@@ -218,7 +235,11 @@
 		</div>
 
 		<div class="control-row">
-			<button type="button" onclick={startSession} disabled={sessionState === 'listening'}>Start</button>
+			<button
+				type="button"
+				onclick={startSession}
+				disabled={sessionState === 'starting' || sessionState === 'listening'}>Start</button
+			>
 			<button type="button" onclick={stopSession} disabled={sessionState === 'idle'}>Stop</button>
 		</div>
 	</section>
