@@ -1,29 +1,18 @@
 <script lang="ts">
-	import { invoke, isTauri } from '@tauri-apps/api/core';
-	import { listen } from '@tauri-apps/api/event';
 	import { onMount } from 'svelte';
+	import {
+		beginSubtitleIslandDrag,
+		closeApp as closeSubIs,
+		isTauriRuntime,
+		listenForAudioActivity,
+		listenForSessionErrors,
+		listenForTranscriptUpdates,
+		startSubtitleSession,
+		stopSubtitleSession,
+		type TranscriptSegment
+	} from '$lib/tauri';
 
 	type SessionState = 'idle' | 'listening' | 'error';
-
-	type TranscriptSegment = {
-		id: string;
-		audioSource: 'microphone' | 'system';
-		text: string;
-		translation?: string;
-		sourceLanguage: string;
-		isFinal: boolean;
-		timestamp: number;
-	};
-
-	type AudioActivity = {
-		level: number;
-		peak: number;
-		timestamp: number;
-	};
-
-	type SessionError = {
-		message: string;
-	};
 
 	let sessionState: SessionState = $state('idle');
 	let transcriptLines: TranscriptSegment[] = $state([]);
@@ -40,8 +29,6 @@
 		'Only the latest lines remain visible.',
 		'Start and stop control the session state.'
 	];
-
-	const isTauriRuntime = () => typeof window !== 'undefined' && isTauri();
 
 	function pushTranscript(segment: TranscriptSegment) {
 		transcriptLines = [...transcriptLines, segment].slice(-2);
@@ -95,7 +82,7 @@
 		}
 
 		try {
-			await invoke('start_session');
+			await startSubtitleSession();
 		} catch (error) {
 			sessionState = 'error';
 			errorMessage = error instanceof Error ? error.message : String(error);
@@ -107,7 +94,7 @@
 
 		if (isTauriRuntime()) {
 			try {
-				await invoke('stop_session');
+				await stopSubtitleSession();
 			} catch (error) {
 				sessionState = 'error';
 				errorMessage = error instanceof Error ? error.message : String(error);
@@ -121,7 +108,7 @@
 
 	async function closeApp() {
 		try {
-			await invoke('close_window');
+			await closeSubIs();
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : String(error);
 			sessionState = 'error';
@@ -136,7 +123,7 @@
 		}
 
 		event.preventDefault();
-		await invoke('start_window_drag').catch((error) => {
+		await beginSubtitleIslandDrag().catch((error) => {
 			errorMessage = error instanceof Error ? error.message : String(error);
 			sessionState = 'error';
 		});
@@ -147,8 +134,8 @@
 			return;
 		}
 
-		listen<TranscriptSegment>('transcript-update', (event) => {
-			pushTranscript(event.payload);
+		listenForTranscriptUpdates((segment) => {
+			pushTranscript(segment);
 		})
 			.then((unlisten) => {
 				unlistenTranscript = unlisten;
@@ -158,8 +145,8 @@
 				errorMessage = error instanceof Error ? error.message : String(error);
 			});
 
-		listen<AudioActivity>('audio-activity', (event) => {
-			audioLevel = Math.max(0, Math.min(event.payload.level, 1));
+		listenForAudioActivity((activity) => {
+			audioLevel = Math.max(0, Math.min(activity.level, 1));
 		})
 			.then((unlisten) => {
 				unlistenAudioActivity = unlisten;
@@ -169,9 +156,9 @@
 				errorMessage = error instanceof Error ? error.message : String(error);
 			});
 
-		listen<SessionError>('session-error', (event) => {
+		listenForSessionErrors((error) => {
 			sessionState = 'error';
-			errorMessage = event.payload.message;
+			errorMessage = error.message;
 			audioLevel = 0;
 		})
 			.then((unlisten) => {
@@ -184,7 +171,7 @@
 
 		return () => {
 			stopLocalMock();
-			void invoke('stop_session').catch(() => undefined);
+			void stopSubtitleSession().catch(() => undefined);
 			unlistenTranscript?.();
 			unlistenAudioActivity?.();
 			unlistenSessionError?.();

@@ -238,7 +238,7 @@ fn stop_session(state: State<'_, Mutex<SessionState>>) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn close_window(
+fn close_app(
     window: tauri::WebviewWindow,
     state: State<'_, Mutex<SessionState>>,
 ) -> Result<(), String> {
@@ -247,7 +247,7 @@ fn close_window(
 }
 
 #[tauri::command]
-fn start_window_drag(window: tauri::WebviewWindow) -> Result<(), String> {
+fn begin_subtitle_island_drag(window: tauri::WebviewWindow) -> Result<(), String> {
     window.start_dragging().map_err(|error| error.to_string())
 }
 
@@ -272,8 +272,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             start_session,
             stop_session,
-            close_window,
-            start_window_drag
+            close_app,
+            begin_subtitle_island_drag
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

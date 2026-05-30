@@ -1,0 +1,18 @@
+{
+  "default": null,
+  "permission": [
+    {
+      "identifier": "app-commands",
+      "description": "Allows the main window to control the SubIs app session and subtitle island window.",
+      "commands": {
+        "allow": [
+          "start_session",
+          "stop_session",
+          "close_app",
+          "begin_subtitle_island_drag"
+        ],
+        "deny": []
+      }
+    }
+  ]
+}
