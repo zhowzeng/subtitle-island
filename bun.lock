@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "subtitle-island",
+      "name": "subis",
       "dependencies": {
         "@tauri-apps/api": "^2",
       },

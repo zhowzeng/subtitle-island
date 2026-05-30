@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "subtitle-island",
+  "productName": "SubIs",
   "version": "0.1.0",
-  "identifier": "com.zengl.subtitleisland",
+  "identifier": "com.zengl.subis",
   "build": {
     "beforeDevCommand": "bun run dev",
     "devUrl": "http://localhost:1420",
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Subtitle Island",
+        "title": "SubIs",
         "width": 720,
         "height": 260,
         "minWidth": 420,

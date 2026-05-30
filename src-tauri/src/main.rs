@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    subtitle_island_lib::run()
+    subis_lib::run()
 }

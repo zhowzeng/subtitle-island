@@ -193,7 +193,7 @@
 </script>
 
 <svelte:head>
-	<title>Subtitle Island</title>
+	<title>SubIs</title>
 </svelte:head>
 
 <main class="island-shell" data-state={sessionState}>
