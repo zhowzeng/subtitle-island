@@ -1,13 +1,15 @@
 <script lang="ts">
 	import type { SessionState } from '$lib/subtitle-session';
-	import { sessionStatusDetail, sessionStatusTitle } from '$lib/subtitle-session';
-	import type { TranscriptSegment } from '$lib/tauri';
+	import { audioSourceLabel, sessionStatusDetail, sessionStatusTitle } from '$lib/subtitle-session';
+	import type { AudioSource, TranscriptSegment } from '$lib/tauri';
 
 	type Props = {
 		sessionState: SessionState;
+		audioSource: AudioSource;
 		transcriptLines: TranscriptSegment[];
 		errorMessage: string;
 		audioLevel: number;
+		onSelectAudioSource: (audioSource: AudioSource) => void;
 		onStartSession: () => void;
 		onStopSession: () => void;
 		onCloseApp: () => void;
@@ -16,14 +18,18 @@
 
 	let {
 		sessionState,
+		audioSource,
 		transcriptLines,
 		errorMessage,
 		audioLevel,
+		onSelectAudioSource,
 		onStartSession,
 		onStopSession,
 		onCloseApp,
 		onStartWindowDrag
 	}: Props = $props();
+
+	const audioSources: AudioSource[] = ['microphone', 'system'];
 </script>
 
 <main class="island-shell" data-state={sessionState}>
@@ -39,7 +45,18 @@
 				<span>{sessionStatusTitle(sessionState)}</span>
 			</div>
 			<div class="window-actions">
-				<span class="audio-source-label">{sessionStatusDetail(sessionState, audioLevel)}</span>
+				<span class="audio-source-label">{sessionStatusDetail(sessionState, audioLevel, audioSource)}</span>
+				<div class="source-toggle" aria-label="Audio Source">
+					{#each audioSources as source}
+						<button
+							type="button"
+							class:active-source={audioSource === source}
+							aria-pressed={audioSource === source}
+							disabled={sessionState === 'starting' || sessionState === 'listening'}
+							onclick={() => onSelectAudioSource(source)}>{audioSourceLabel(source)}</button
+						>
+					{/each}
+				</div>
 				<div class="control-row" aria-label="Session controls">
 					<button
 						type="button"
@@ -52,7 +69,7 @@
 			</div>
 		</div>
 
-		<div class="audio-meter" aria-label="Microphone activity">
+		<div class="audio-meter" aria-label={`${audioSourceLabel(audioSource)} activity`}>
 			<span style:transform={`scaleX(${audioLevel})`}></span>
 		</div>
 

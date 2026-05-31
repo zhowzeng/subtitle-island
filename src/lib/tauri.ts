@@ -3,12 +3,18 @@ import { listen } from '@tauri-apps/api/event';
 
 export type TranscriptSegment = {
 	id: string;
-	audioSource: 'microphone' | 'system';
+	audioSource: AudioSource;
 	text: string;
 	translation?: string;
 	sourceLanguage: string;
 	isFinal: boolean;
 	timestamp: number;
+};
+
+export type AudioSource = 'microphone' | 'system';
+
+export type StartSessionOptions = {
+	audioSource: AudioSource;
 };
 
 export type AudioActivity = {
@@ -23,7 +29,8 @@ export type SessionError = {
 
 export const isTauriRuntime = () => typeof window !== 'undefined' && isTauri();
 
-export const startSubtitleSession = () => invoke<void>('start_session');
+export const startSubtitleSession = (options: StartSessionOptions) =>
+	invoke<void>('start_session', { options });
 
 export const stopSubtitleSession = () => invoke<void>('stop_session');
 

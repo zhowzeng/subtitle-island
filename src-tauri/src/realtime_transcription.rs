@@ -1,7 +1,7 @@
 use crate::{
     audio::{samples_contain_speech, AudioChunk, AudioNormalizer, OPENAI_TARGET_SAMPLE_RATE},
     events::{emit_transcript_segment, now_millis, TranscriptSegment},
-    session::send_ready_error,
+    session::{send_ready_error, AudioSource},
 };
 use base64::{engine::general_purpose::STANDARD as BASE64_STANDARD, Engine};
 use futures_util::{SinkExt, StreamExt};
@@ -31,6 +31,7 @@ pub(crate) async fn run_realtime_transcription(
     running: Arc<AtomicBool>,
     audio_receiver: Receiver<AudioChunk>,
     input_sample_rate: u32,
+    audio_source: AudioSource,
     api_key: String,
     ready_sender: Sender<Result<(), String>>,
 ) -> Result<(), String> {
@@ -156,7 +157,10 @@ pub(crate) async fn run_realtime_transcription(
                             ))
                             .await
                             .map_err(|error| {
-                                format!("Could not stream microphone audio to OpenAI: {error}")
+                                format!(
+                                    "Could not stream {} audio to OpenAI: {error}",
+                                    audio_source.as_str()
+                                )
                             })?;
                         buffer_started_at.get_or_insert_with(Instant::now);
                         has_uncommitted_audio = true;
@@ -164,7 +168,10 @@ pub(crate) async fn run_realtime_transcription(
                 }
                 Err(TryRecvError::Empty) => break,
                 Err(TryRecvError::Disconnected) => {
-                    return Err("Microphone audio stream stopped unexpectedly.".to_string());
+                    return Err(format!(
+                        "{} audio stream stopped unexpectedly.",
+                        audio_source.as_str()
+                    ));
                 }
             }
         }
@@ -179,7 +186,12 @@ pub(crate) async fn run_realtime_transcription(
                     .into(),
                 ))
                 .await
-                .map_err(|error| format!("Could not commit microphone audio to OpenAI: {error}"))?;
+                .map_err(|error| {
+                    format!(
+                        "Could not commit {} audio to OpenAI: {error}",
+                        audio_source.as_str()
+                    )
+                })?;
             has_uncommitted_audio = false;
             buffer_started_at = None;
             last_voice_at = None;
@@ -192,6 +204,7 @@ pub(crate) async fn run_realtime_transcription(
                         &app,
                         message,
                         &mut transcript_accumulator,
+                        audio_source,
                     )?,
                     Some(Err(error)) => return Err(format!("OpenAI Realtime connection failed: {error}")),
                     None => return Err("OpenAI Realtime connection closed.".to_string()),
@@ -232,6 +245,7 @@ fn handle_realtime_message(
     app: &tauri::AppHandle,
     message: Message,
     transcript_accumulator: &mut HashMap<String, String>,
+    audio_source: AudioSource,
 ) -> Result<(), String> {
     let Message::Text(text) = message else {
         return Ok(());
@@ -253,7 +267,7 @@ fn handle_realtime_message(
             if !delta.is_empty() {
                 let transcript =
                     accumulated_transcript_delta(&value, delta, transcript_accumulator);
-                emit_live_subtitle(app, &value, transcript, false);
+                emit_live_subtitle(app, &value, transcript, false, audio_source);
             }
         }
         "conversation.item.input_audio_transcription.completed" => {
@@ -262,7 +276,7 @@ fn handle_realtime_message(
                 .and_then(Value::as_str)
                 .unwrap_or_default();
             if !transcript.is_empty() {
-                emit_live_subtitle(app, &value, transcript, true);
+                emit_live_subtitle(app, &value, transcript, true, audio_source);
             }
             transcript_accumulator.remove(&transcript_segment_id(&value));
         }
@@ -299,12 +313,18 @@ fn transcript_segment_id(event: &Value) -> String {
         .to_string()
 }
 
-fn emit_live_subtitle(app: &tauri::AppHandle, event: &Value, text: &str, is_final: bool) {
+fn emit_live_subtitle(
+    app: &tauri::AppHandle,
+    event: &Value,
+    text: &str,
+    is_final: bool,
+    audio_source: AudioSource,
+) {
     emit_transcript_segment(
         app,
         TranscriptSegment {
             id: transcript_segment_id(event),
-            audio_source: "microphone",
+            audio_source: audio_source.as_str(),
             text: text.to_string(),
             source_language: "auto".to_string(),
             is_final,

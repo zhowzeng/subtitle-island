@@ -17,10 +17,12 @@
 		listenForTranscriptUpdates,
 		startSubtitleSession,
 		stopSubtitleSession,
+		type AudioSource,
 		type TranscriptSegment
 	} from '$lib/tauri';
 
 	let sessionState: SessionState = $state('idle');
+	let audioSource: AudioSource = $state('microphone');
 	let transcriptLines: TranscriptSegment[] = $state([]);
 	let errorMessage = $state('');
 	let audioLevel = $state(0);
@@ -48,6 +50,7 @@
 		if (!isTauriRuntime()) {
 			sessionState = 'listening';
 			stopLocalSubtitleSession = startLocalSubtitleSession({
+				audioSource,
 				pushTranscript,
 				setAudioLevel: (level) => {
 					audioLevel = level;
@@ -57,12 +60,20 @@
 		}
 
 		try {
-			await startSubtitleSession();
+			await startSubtitleSession({ audioSource });
 			sessionState = 'listening';
 		} catch (error) {
 			sessionState = 'error';
 			errorMessage = conciseSessionErrorMessage(error instanceof Error ? error.message : String(error));
 		}
+	}
+
+	function selectAudioSource(nextAudioSource: AudioSource) {
+		if (sessionState === 'starting' || sessionState === 'listening') {
+			return;
+		}
+
+		audioSource = nextAudioSource;
 	}
 
 	async function stopSession() {
@@ -161,9 +172,11 @@
 
 <SubtitleIsland
 	{sessionState}
+	{audioSource}
 	{transcriptLines}
 	{errorMessage}
 	{audioLevel}
+	onSelectAudioSource={selectAudioSource}
 	onStartSession={startSession}
 	onStopSession={stopSession}
 	onCloseApp={closeApp}

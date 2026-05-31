@@ -60,6 +60,8 @@ button {
 
 .status-row {
 	justify-content: space-between;
+	row-gap: 8px;
+	flex-wrap: wrap;
 }
 
 .subtitle-island:active {
@@ -98,13 +100,45 @@ button {
 .audio-source-label {
 	color: #9fb0ba;
 	font-size: 12px;
+	white-space: nowrap;
 }
 
 .window-actions {
 	display: inline-flex;
 	align-items: center;
+	justify-content: flex-end;
+	flex-wrap: wrap;
 	gap: 10px;
 	min-width: 0;
+}
+
+.source-toggle {
+	display: inline-flex;
+	overflow: hidden;
+	border: 1px solid rgb(255 255 255 / 0.16);
+	border-radius: 6px;
+	background: rgb(255 255 255 / 0.06);
+}
+
+.source-toggle button {
+	min-width: 88px;
+	min-height: 30px;
+	border: 0;
+	color: #aebdc5;
+	background: transparent;
+	cursor: pointer;
+	font-size: 12px;
+}
+
+.source-toggle button:hover:not(:disabled),
+.source-toggle .active-source {
+	color: #f7fafc;
+	background: rgb(255 255 255 / 0.14);
+}
+
+.source-toggle button:disabled {
+	color: #75838c;
+	cursor: default;
 }
 
 .window-close {

@@ -1,4 +1,6 @@
-use crate::session::{start_subtitle_session, stop_subtitle_session, SessionState};
+use crate::session::{
+    start_subtitle_session, stop_subtitle_session, SessionState, StartSessionOptions,
+};
 use std::sync::Mutex;
 use tauri::State;
 
@@ -6,8 +8,9 @@ use tauri::State;
 pub(crate) fn start_session(
     app: tauri::AppHandle,
     state: State<'_, Mutex<SessionState>>,
+    options: Option<StartSessionOptions>,
 ) -> Result<(), String> {
-    start_subtitle_session(app, state)
+    start_subtitle_session(app, state, options.unwrap_or_default())
 }
 
 #[tauri::command]

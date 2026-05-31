@@ -4,7 +4,9 @@ use crate::{
     events::{emit_session_error_message, log_session_error},
     microphone::start_microphone_capture,
     realtime_transcription::run_realtime_transcription,
+    system_audio::start_system_audio_capture,
 };
+use serde::Deserialize;
 use std::{
     any::Any,
     sync::{
@@ -16,12 +18,44 @@ use std::{
 };
 use tauri::State;
 
+#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum AudioSource {
+    #[default]
+    Microphone,
+    System,
+}
+
+impl AudioSource {
+    pub(crate) fn as_str(self) -> &'static str {
+        match self {
+            AudioSource::Microphone => "microphone",
+            AudioSource::System => "system",
+        }
+    }
+
+    fn capture_name(self) -> &'static str {
+        match self {
+            AudioSource::Microphone => "Microphone Capture",
+            AudioSource::System => "System Audio Capture",
+        }
+    }
+}
+
+#[derive(Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct StartSessionOptions {
+    #[serde(default)]
+    pub(crate) audio_source: AudioSource,
+}
+
 #[derive(Default)]
 pub(crate) struct SessionState {
     worker: Option<SessionWorker>,
 }
 
 struct SessionWorker {
+    audio_source: AudioSource,
     running: Arc<AtomicBool>,
     handle: JoinHandle<()>,
 }
@@ -29,6 +63,7 @@ struct SessionWorker {
 pub(crate) fn start_subtitle_session(
     app: tauri::AppHandle,
     state: State<'_, Mutex<SessionState>>,
+    options: StartSessionOptions,
 ) -> Result<(), String> {
     join_finished_worker(&state)?;
 
@@ -42,6 +77,7 @@ pub(crate) fn start_subtitle_session(
 
     let running = Arc::new(AtomicBool::new(true));
     let worker_running = Arc::clone(&running);
+    let audio_source = options.audio_source;
     let (ready_sender, ready_receiver) = mpsc::channel();
     let (audio_sender, audio_receiver) = mpsc::sync_channel::<AudioChunk>(32);
     let api_key = load_openai_api_key().inspect_err(|error| {
@@ -51,14 +87,16 @@ pub(crate) fn start_subtitle_session(
     let ready_sender_for_panic = ready_sender.clone();
     let handle = thread::spawn(move || {
         let worker_result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            let (stream, input_sample_rate) =
-                match start_microphone_capture(app.clone(), audio_sender) {
-                    Ok(capture) => capture,
-                    Err(error) => {
-                        send_ready_error(&ready_sender, error);
-                        return;
-                    }
-                };
+            let (stream, input_sample_rate) = match match audio_source {
+                AudioSource::Microphone => start_microphone_capture(app.clone(), audio_sender),
+                AudioSource::System => start_system_audio_capture(app.clone(), audio_sender),
+            } {
+                Ok(capture) => capture,
+                Err(error) => {
+                    send_ready_error(&ready_sender, error);
+                    return;
+                }
+            };
 
             let runtime = match tokio::runtime::Builder::new_current_thread()
                 .enable_all()
@@ -79,6 +117,7 @@ pub(crate) fn start_subtitle_session(
                 Arc::clone(&worker_running),
                 audio_receiver,
                 input_sample_rate,
+                audio_source,
                 api_key,
                 ready_sender,
             )) {
@@ -92,7 +131,8 @@ pub(crate) fn start_subtitle_session(
 
         if let Err(payload) = worker_result {
             let message = format!(
-                "Microphone capture worker crashed: {}",
+                "{} worker crashed: {}",
+                audio_source.capture_name(),
                 panic_message(payload.as_ref())
             );
             send_ready_error(&ready_sender_for_panic, message.clone());
@@ -104,6 +144,7 @@ pub(crate) fn start_subtitle_session(
     });
 
     session.worker = Some(SessionWorker {
+        audio_source,
         running: Arc::clone(&running),
         handle,
     });
@@ -139,7 +180,10 @@ pub(crate) fn stop_subtitle_session(state: State<'_, Mutex<SessionState>>) -> Re
     if let Some(worker) = worker {
         worker.running.store(false, Ordering::SeqCst);
         worker.handle.join().map_err(|_| {
-            let message = "Microphone capture worker stopped unexpectedly.".to_string();
+            let message = format!(
+                "{} worker stopped unexpectedly.",
+                worker.audio_source.capture_name()
+            );
             log_session_error(&message);
             message
         })?;
@@ -173,7 +217,10 @@ fn join_finished_worker(state: &State<'_, Mutex<SessionState>>) -> Result<(), St
     if let Some(worker) = worker {
         worker.running.store(false, Ordering::SeqCst);
         worker.handle.join().map_err(|_| {
-            let message = "Microphone capture worker stopped unexpectedly.".to_string();
+            let message = format!(
+                "{} worker stopped unexpectedly.",
+                worker.audio_source.capture_name()
+            );
             log_session_error(&message);
             message
         })?;

@@ -1,4 +1,4 @@
-import type { AudioActivity, TranscriptSegment } from './tauri';
+import type { AudioActivity, AudioSource, TranscriptSegment } from './tauri';
 
 export type SessionState = 'idle' | 'starting' | 'listening' | 'error';
 
@@ -9,11 +9,23 @@ export function sessionStatusTitle(sessionState: SessionState) {
 	return 'Idle';
 }
 
-export function sessionStatusDetail(sessionState: SessionState, audioLevel: number) {
+export function audioSourceLabel(audioSource: AudioSource) {
+	if (audioSource === 'system') return 'System Audio';
+	return 'Microphone';
+}
+
+export function sessionStatusDetail(
+	sessionState: SessionState,
+	audioLevel: number,
+	audioSource: AudioSource
+) {
+	const sourceLabel = audioSourceLabel(audioSource);
+
 	if (sessionState === 'starting') return 'Connecting API';
-	if (sessionState === 'listening') return `Microphone ${Math.round(audioLevel * 100)}% - API connected`;
+	if (sessionState === 'listening')
+		return `${sourceLabel} ${Math.round(audioLevel * 100)}% - API connected`;
 	if (sessionState === 'error') return 'Session stopped';
-	return 'Microphone ready';
+	return `${sourceLabel} ready`;
 }
 
 export function conciseSessionErrorMessage(message: string) {
@@ -22,6 +34,10 @@ export function conciseSessionErrorMessage(message: string) {
 	if (!trimmed) return 'Subtitle session failed.';
 	if (trimmed.includes('OPENAI_API_KEY')) return 'Missing OpenAI API key.';
 	if (trimmed.includes('default microphone')) return 'No default microphone was found.';
+	if (trimmed.includes('default system audio') || trimmed.includes('System Audio Capture')) {
+		return 'System Audio Capture is unavailable.';
+	}
+	if (trimmed.includes('system audio')) return 'System Audio Capture failed.';
 	if (trimmed.includes('microphone') || trimmed.includes('Microphone')) {
 		return 'Microphone capture failed.';
 	}

@@ -1,4 +1,4 @@
-import type { TranscriptSegment } from './tauri';
+import type { AudioSource, TranscriptSegment } from './tauri';
 
 const fallbackLiveSubtitles = [
 	'Testing the subtitle island layout.',
@@ -8,11 +8,13 @@ const fallbackLiveSubtitles = [
 ];
 
 type LocalSubtitleSessionOptions = {
+	audioSource: AudioSource;
 	pushTranscript: (segment: TranscriptSegment) => void;
 	setAudioLevel: (level: number) => void;
 };
 
 export function startLocalSubtitleSession({
+	audioSource,
 	pushTranscript,
 	setAudioLevel
 }: LocalSubtitleSessionOptions) {
@@ -22,7 +24,7 @@ export function startLocalSubtitleSession({
 
 	pushTranscript({
 		id: `local-${Date.now()}`,
-		audioSource: 'microphone',
+		audioSource,
 		text: fallbackLiveSubtitles[index],
 		sourceLanguage: 'en',
 		isFinal: false,
@@ -34,7 +36,7 @@ export function startLocalSubtitleSession({
 		setAudioLevel(0.18 + (index % 3) * 0.2);
 		pushTranscript({
 			id: `local-${Date.now()}`,
-			audioSource: 'microphone',
+			audioSource,
 			text: fallbackLiveSubtitles[index],
 			sourceLanguage: 'en',
 			isFinal: index % 2 === 0,
