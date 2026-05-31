@@ -24,12 +24,42 @@ Phase 1 is complete and provides:
 - Ephemeral frontend display of the latest subtitle lines.
 - Error handling for missing microphone, missing API key, and Realtime failures.
 
-The current implementation is microphone-first:
+Before Phase 2 implementation, the app was microphone-first:
 
 - `start_session` has no options.
 - `session.rs` directly starts microphone capture.
 - Realtime transcription emits `audioSource: "microphone"`.
 - Frontend types already allow `audioSource: "microphone" | "system"` and `translation?: string`.
+
+## Implementation Progress
+
+Milestones 1 and 2 are complete as of commit `c096d72 feat: add system audio capture source`.
+
+Implemented:
+
+- `start_session` accepts typed session options with an explicit Audio Source.
+- The frontend exposes a minimal Audio Source control for `Microphone` and `System Audio`.
+- Browser development mode remains mocked and uses the selected Audio Source.
+- `src-tauri/` starts either Microphone Capture or Windows System Audio Capture from the same session boundary.
+- Windows System Audio Capture uses the default output device through CPAL/WASAPI loopback.
+- System audio chunks reuse the existing `AudioChunk`, `AudioNormalizer`, and Realtime transcription path.
+- Transcript events carry the selected `audioSource`.
+- `audio-activity` is emitted for both microphone and system audio.
+- Source-aware errors are surfaced for capture and Realtime failures.
+
+Verified:
+
+- `bun run check`
+- From `src-tauri/`: `cargo fmt --check`
+- From `src-tauri/`: `cargo check --locked`
+- From `src-tauri/`: `cargo test --locked`
+- Manual Tauri check: Microphone Capture and System Audio Capture both work.
+
+Not yet implemented:
+
+- Final Transcript Translation.
+- Chinese Mode rendering of `translation`.
+- Long-session hardening and latency measurement.
 
 ## Assumptions
 
@@ -93,6 +123,8 @@ Why this matters: the existing frontend type already models this, and one event 
 
 ## Milestone 1: Audio Source Boundary
 
+Status: Complete.
+
 Refactor the session boundary before adding new capture code.
 
 ### Scope
@@ -112,6 +144,8 @@ Refactor the session boundary before adding new capture code.
 - Confirm old repeated Start/Stop behavior still works.
 
 ## Milestone 2: Windows System Audio Capture
+
+Status: Complete.
 
 Add the first real System Audio Capture path.
 
@@ -133,6 +167,8 @@ Add the first real System Audio Capture path.
 - From `src-tauri/`, run `cargo check --locked` and `cargo test --locked`.
 
 ## Milestone 3: Transcription Pipeline Reuse
+
+Status: Next.
 
 Prove that System Audio Capture can use the existing Realtime transcription path without forking transcription behavior.
 
