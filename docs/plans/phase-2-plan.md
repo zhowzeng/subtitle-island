@@ -42,6 +42,8 @@ Implemented:
 - Browser development mode remains mocked and uses the selected Audio Source.
 - `src-tauri/` starts either Microphone Capture or Windows System Audio Capture from the same session boundary.
 - Windows System Audio Capture uses the default output device through CPAL/WASAPI loopback.
+- Linux System Audio Capture records the default sink monitor (`@DEFAULT_MONITOR@`) through the PulseAudio simple API, which also works on PipeWire via pipewire-pulse.
+- Capture sources return a shared `AudioCapture` handle; dropping it stops capture.
 - System audio chunks reuse the existing `AudioChunk`, `AudioNormalizer`, and Realtime transcription path.
 - Transcript events carry the selected `audioSource`.
 - `audio-activity` is emitted for both microphone and system audio.
@@ -63,7 +65,7 @@ Not yet implemented:
 
 ## Assumptions
 
-- Windows is the first Phase 2 target because the Phase 1 plan already used Windows as the initial platform and the PRD names WASAPI loopback for Windows system audio capture.
+- Windows and Linux are the supported Phase 2 targets. Windows was first because the Phase 1 plan already used Windows as the initial platform and the PRD names WASAPI loopback for Windows system audio capture.
 - macOS System Audio Capture remains a known risk and should not block the first Windows implementation slice.
 - Phase 2 adds a minimal Audio Source choice, not a full settings panel. Full settings remain Phase 3 scope.
 - Translation is derived from transcript text and remains ephemeral display data.
@@ -146,6 +148,8 @@ Refactor the session boundary before adding new capture code.
 ## Milestone 2: Windows System Audio Capture
 
 Status: Complete.
+
+Linux follow-up: implemented; manual Tauri check pending. Linux uses the PulseAudio default sink monitor instead of CPAL, because CPAL's Linux host is ALSA-only and has no loopback capture. Builds link `libpulse.so.0` directly when the PulseAudio dev package is missing, so only the runtime `libpulse0` library is required. On PipeWire the monitor follows sink mute, so a muted output device produces silent captured audio.
 
 Add the first real System Audio Capture path.
 
@@ -291,5 +295,6 @@ No new ADR is required for the initial Phase 2 plan.
 - Keeping capture, transcription, Translation, and session ownership in `src-tauri/` follows the existing Tauri boundary ADR.
 - Not persisting transcript or Translation text follows the MVP data retention ADR.
 - Windows-first WASAPI loopback is an implementation slice, not yet a hard-to-reverse product decision.
+- Linux PulseAudio monitor capture is an implementation slice behind the same `start_system_audio_capture` boundary; switching to native PipeWire later only touches `system_audio.rs`.
 
 Create a new ADR only if the project commits to a macOS System Audio Capture strategy with meaningful trade-offs, such as BlackHole versus ScreenCaptureKit, or if Translation provider strategy expands beyond OpenAI.

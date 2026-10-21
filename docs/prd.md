@@ -147,6 +147,10 @@ SubIs
 
 WASAPI loopback
 
+### Linux
+
+PulseAudio / PipeWire (pipewire-pulse) default sink monitor (`@DEFAULT_MONITOR@`)
+
 ### macOS
 
 BlackHole / ScreenCaptureKit
