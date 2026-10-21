@@ -5,6 +5,7 @@
 	import {
 		clampedAudioLevel,
 		conciseSessionErrorMessage,
+		isChineseModeSegment,
 		visibleTranscriptSegments,
 		type SessionState
 	} from '$lib/subtitle-session';
@@ -38,6 +39,9 @@
 	function pushTranscript(segment: TranscriptSegment) {
 		if (segment.translation) {
 			translationFailed = false;
+		}
+		if (translate && !isChineseModeSegment(segment)) {
+			return;
 		}
 		transcriptLines = visibleTranscriptSegments(transcriptLines, segment);
 	}

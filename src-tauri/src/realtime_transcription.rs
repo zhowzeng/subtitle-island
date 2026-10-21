@@ -4,7 +4,9 @@ use crate::{
         emit_transcript_segment, emit_translation_error_message, now_millis, TranscriptSegment,
     },
     session::{send_ready_error, AudioSource, StartSessionOptions},
-    translation::{needs_translation, translate_to_traditional_chinese, translation_client},
+    translation::{
+        is_chinese_text, needs_translation, translate_to_traditional_chinese, translation_client,
+    },
 };
 use base64::{engine::general_purpose::STANDARD as BASE64_STANDARD, Engine};
 use futures_util::{SinkExt, StreamExt};
@@ -359,7 +361,7 @@ fn emit_live_subtitle(
         audio_source: audio_source.as_str(),
         text: text.to_string(),
         translation: None,
-        source_language: "auto".to_string(),
+        source_language: if is_chinese_text(text) { "zh" } else { "auto" }.to_string(),
         is_final,
         timestamp: now_millis(),
     };

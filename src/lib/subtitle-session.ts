@@ -52,6 +52,11 @@ export function conciseSessionErrorMessage(message: string) {
 	return trimmed;
 }
 
+// Chinese Mode shows translated lines and Chinese source lines only.
+export function isChineseModeSegment(segment: TranscriptSegment) {
+	return Boolean(segment.translation) || segment.sourceLanguage === 'zh';
+}
+
 export function visibleTranscriptSegments(
 	currentSegments: TranscriptSegment[],
 	nextSegment: TranscriptSegment

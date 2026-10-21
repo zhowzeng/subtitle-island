@@ -70,7 +70,7 @@ fn response_output_text(body: &Value) -> Option<String> {
 
 // Each Han character counts as one token and each run of other letters counts as
 // one word, so code-switched Chinese like "我們用 API 來做 demo" stays Chinese.
-fn is_chinese_text(text: &str) -> bool {
+pub(crate) fn is_chinese_text(text: &str) -> bool {
     let mut han = 0;
     let mut other_words = 0;
     let mut in_other_word = false;
