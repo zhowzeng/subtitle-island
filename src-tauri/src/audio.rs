@@ -13,6 +13,17 @@ pub(crate) struct AudioChunk {
     pub(crate) samples: Vec<f32>,
 }
 
+/// Keeps an active capture alive; dropping it stops capture.
+pub(crate) enum AudioCapture {
+    Cpal {
+        _stream: cpal::Stream,
+    },
+    #[cfg(target_os = "linux")]
+    Pulse {
+        _capture: crate::system_audio::PulseCapture,
+    },
+}
+
 pub(crate) struct AudioNormalizer {
     input_sample_rate: u32,
     pending_mono: Vec<f64>,

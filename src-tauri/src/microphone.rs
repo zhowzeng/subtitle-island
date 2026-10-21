@@ -1,7 +1,7 @@
 use crate::{
     audio::{
         activity_from_f32, activity_from_i16, activity_from_u16, chunk_from_interleaved_f32,
-        chunk_from_interleaved_i16, chunk_from_interleaved_u16, AudioChunk,
+        chunk_from_interleaved_i16, chunk_from_interleaved_u16, AudioCapture, AudioChunk,
     },
     events::{emit_audio_activity, emit_session_error_message},
 };
@@ -14,7 +14,7 @@ use std::{
 pub(crate) fn start_microphone_capture(
     app: tauri::AppHandle,
     audio_sender: SyncSender<AudioChunk>,
-) -> Result<(cpal::Stream, u32), String> {
+) -> Result<(AudioCapture, u32), String> {
     let host = cpal::default_host();
     let device = host
         .default_input_device()
@@ -84,7 +84,7 @@ pub(crate) fn start_microphone_capture(
         .play()
         .map_err(|error| format!("Could not play microphone stream: {error}"))?;
 
-    Ok((stream, sample_rate))
+    Ok((AudioCapture::Cpal { _stream: stream }, sample_rate))
 }
 
 fn emit_activity(
