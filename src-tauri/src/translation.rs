@@ -29,7 +29,9 @@ pub(crate) async fn translate_to_traditional_chinese(
         .json(&json!({
             "model": OPENAI_TRANSLATION_MODEL,
             "instructions": TRANSLATION_INSTRUCTIONS,
-            "input": text
+            "input": text,
+            // Live subtitles need latency more than reasoning depth.
+            "reasoning": { "effort": "none" }
         }))
         .send()
         .await
