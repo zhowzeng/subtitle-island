@@ -84,6 +84,8 @@ Milestone 5 is complete: Chinese Mode renders `translation`, mocked translated l
 
 Milestone 6 hardening (Linux, release build):
 
+Measurement method and results are tracked in [performance-baseline.md](../performance-baseline.md).
+
 - Realtime shutdown is bounded to 1 second, so a stalled connection cannot hang Stop.
 - The backend logs `subis::latency` timings to stderr: `Final Transcript N ms after commit` and `Translation N ms`. Logs carry durations only, never transcript or Translation text.
 - Translation requests set `reasoning.effort` to `none`. This cut the median Translation request from about 2.6 s to about 1.75 s.
