@@ -33,7 +33,7 @@ Before Phase 2 implementation, the app was microphone-first:
 
 ## Implementation Progress
 
-Milestones 1 and 2 are complete as of commit `c096d72 feat: add system audio capture source`.
+Milestones 1 and 2 are complete as of commit `c096d72 feat: add system audio capture source`. Linux System Audio Capture was added in `2b94a76 feat: add linux system audio capture`. Milestone 3 is complete; it needed no code changes beyond Milestone 2.
 
 Implemented:
 
@@ -56,11 +56,21 @@ Verified:
 - From `src-tauri/`: `cargo check --locked`
 - From `src-tauri/`: `cargo test --locked`
 - Manual Tauri check: Microphone Capture and System Audio Capture both work.
+- Manual Tauri check on Linux: System Audio Capture produces Live Subtitle text, partial text is replaced by final text, and Stop during playback does not hang.
+
+Milestone 4 is implemented; manual Tauri check pending:
+
+- Translation is opt-in per Subtitle Session: `StartSessionOptions.translate` defaults to `false`, and a `Translate` toggle next to the Audio Source control sets it before Start. When it is off, the backend makes no Translation requests.
+- `translation.rs` translates Final Transcript text into Traditional Chinese through the OpenAI Responses API with `gpt-6-luna`, reusing the session API key.
+- A local heuristic skips Chinese text: Han characters count as one token each and runs of other letters count as one word, so code-switched Chinese is not translated. Text with kana or Hangul is always translated.
+- The Final Transcript is emitted first without `translation`, then the same Transcript Segment is emitted again with `translation` when it arrives.
+- Translation runs in a `JoinSet` on the session runtime, so Stop aborts in-flight requests.
+- Translation failures are non-fatal: the backend emits `translation-error`, the line keeps its source text, and the status shows `Translation failed` until the next translated line.
+- The Subtitle Island renders `translation` when present, otherwise the source text.
 
 Not yet implemented:
 
-- Final Transcript Translation.
-- Chinese Mode rendering of `translation`.
+- Chinese Mode display polish and mocked translated lines (Milestone 5).
 - Long-session hardening and latency measurement.
 
 ## Assumptions
@@ -149,7 +159,7 @@ Refactor the session boundary before adding new capture code.
 
 Status: Complete.
 
-Linux follow-up: implemented; manual Tauri check pending. Linux uses the PulseAudio default sink monitor instead of CPAL, because CPAL's Linux host is ALSA-only and has no loopback capture. Builds link `libpulse.so.0` directly when the PulseAudio dev package is missing, so only the runtime `libpulse0` library is required. On PipeWire the monitor follows sink mute, so a muted output device produces silent captured audio.
+Linux follow-up: complete. Linux uses the PulseAudio default sink monitor instead of CPAL, because CPAL's Linux host is ALSA-only and has no loopback capture. Builds link `libpulse.so.0` directly when the PulseAudio dev package is missing, so only the runtime `libpulse0` library is required. On PipeWire the monitor follows sink mute, so a muted output device produces silent captured audio.
 
 Add the first real System Audio Capture path.
 
@@ -172,7 +182,7 @@ Add the first real System Audio Capture path.
 
 ## Milestone 3: Transcription Pipeline Reuse
 
-Status: Next.
+Status: Complete.
 
 Prove that System Audio Capture can use the existing Realtime transcription path without forking transcription behavior.
 
@@ -191,6 +201,8 @@ Prove that System Audio Capture can use the existing Realtime transcription path
 - From `src-tauri/`, run `cargo clippy --all-targets --all-features --locked -- -D warnings`.
 
 ## Milestone 4: Final Transcript Translation
+
+Status: Implemented; manual Tauri check pending.
 
 Add Translation for final transcript text.
 
