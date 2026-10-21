@@ -25,6 +25,7 @@ use tokio_tungstenite::{
     connect_async,
     tungstenite::{client::IntoClientRequest, http::HeaderValue, protocol::Message},
 };
+use tracing::info;
 
 const OPENAI_REALTIME_TRANSCRIPTION_URL: &str =
     "wss://api.openai.com/v1/realtime?intent=transcription";
@@ -156,6 +157,7 @@ pub(crate) async fn run_realtime_transcription(
 
     let _ = ready_sender.send(Ok(()));
     let mut transcript_accumulator = HashMap::new();
+    let mut committed_at = HashMap::new();
     let mut has_uncommitted_audio = false;
     let mut buffer_started_at = None;
     let mut last_voice_at = None;
@@ -233,6 +235,7 @@ pub(crate) async fn run_realtime_transcription(
                         &app,
                         message,
                         &mut transcript_accumulator,
+                        &mut committed_at,
                         options,
                         translator.as_ref(),
                         &mut translations,
@@ -294,6 +297,7 @@ fn handle_realtime_message(
     app: &tauri::AppHandle,
     message: Message,
     transcript_accumulator: &mut HashMap<String, String>,
+    committed_at: &mut HashMap<String, Instant>,
     options: StartSessionOptions,
     translator: Option<&Translator>,
     translations: &mut JoinSet<()>,
@@ -310,6 +314,9 @@ fn handle_realtime_message(
         .unwrap_or_default();
 
     match event_type {
+        "input_audio_buffer.committed" => {
+            committed_at.insert(transcript_segment_id(&value), Instant::now());
+        }
         "conversation.item.input_audio_transcription.delta" => {
             let delta = value
                 .get("delta")
@@ -326,6 +333,13 @@ fn handle_realtime_message(
                 .get("transcript")
                 .and_then(Value::as_str)
                 .unwrap_or_default();
+            if let Some(committed) = committed_at.remove(&transcript_segment_id(&value)) {
+                info!(
+                    target: "subis::latency",
+                    "Final Transcript {} ms after commit",
+                    committed.elapsed().as_millis()
+                );
+            }
             if !transcript.is_empty() {
                 let segment = emit_live_subtitle(app, &value, transcript, true, options);
                 if let Some(translator) = translator
@@ -406,6 +420,7 @@ impl Translator {
         let running = Arc::clone(&self.running);
 
         async move {
+            let started_at = Instant::now();
             let result = translate_to_traditional_chinese(&client, &api_key, &segment.text).await;
             if !running.load(Ordering::SeqCst) {
                 return;
@@ -413,6 +428,11 @@ impl Translator {
 
             match result {
                 Ok(translation) => {
+                    info!(
+                        target: "subis::latency",
+                        "Translation {} ms",
+                        started_at.elapsed().as_millis()
+                    );
                     segment.translation = Some(translation);
                     emit_transcript_segment(&app, segment);
                 }
