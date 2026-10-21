@@ -31,6 +31,7 @@ const OPENAI_REALTIME_TRANSCRIPTION_URL: &str =
 const OPENAI_TRANSCRIPTION_MODEL: &str = "gpt-realtime-whisper";
 const OPENAI_SILENCE_COMMIT_DELAY: Duration = Duration::from_millis(350);
 const OPENAI_MAX_COMMIT_DELAY: Duration = Duration::from_millis(2_500);
+const OPENAI_SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(1);
 
 pub(crate) async fn run_realtime_transcription(
     app: tauri::AppHandle,
@@ -244,18 +245,22 @@ pub(crate) async fn run_realtime_transcription(
         }
     }
 
-    if has_uncommitted_audio {
-        let _ = writer
-            .send(Message::Text(
-                json!({
-                    "type": "input_audio_buffer.commit"
-                })
-                .to_string()
-                .into(),
-            ))
-            .await;
-    }
-    let _ = writer.close().await;
+    // Bound the shutdown so a stalled connection cannot hang Stop.
+    let _ = tokio::time::timeout(OPENAI_SHUTDOWN_TIMEOUT, async {
+        if has_uncommitted_audio {
+            let _ = writer
+                .send(Message::Text(
+                    json!({
+                        "type": "input_audio_buffer.commit"
+                    })
+                    .to_string()
+                    .into(),
+                ))
+                .await;
+        }
+        let _ = writer.close().await;
+    })
+    .await;
     Ok(())
 }
 
