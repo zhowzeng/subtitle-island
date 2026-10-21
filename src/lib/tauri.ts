@@ -15,10 +15,18 @@ export type AudioSource = 'microphone' | 'system';
 
 export type SourceLanguage = 'auto' | 'en' | 'zh';
 
-export type StartSessionOptions = {
+export type DisplayMode = 'original' | 'chinese' | 'bilingual';
+
+export type Settings = {
 	audioSource: AudioSource;
 	sourceLanguage: SourceLanguage;
-	translate: boolean;
+	displayMode: DisplayMode;
+};
+
+export const defaultSettings: Settings = {
+	audioSource: 'microphone',
+	sourceLanguage: 'auto',
+	displayMode: 'original'
 };
 
 export type AudioActivity = {
@@ -33,8 +41,11 @@ export type SessionError = {
 
 export const isTauriRuntime = () => typeof window !== 'undefined' && isTauri();
 
-export const startSubtitleSession = (options: StartSessionOptions) =>
-	invoke<void>('start_session', { options });
+export const getSettings = () => invoke<Settings>('get_settings');
+
+export const saveSettings = (settings: Settings) => invoke<void>('save_settings', { settings });
+
+export const startSubtitleSession = () => invoke<void>('start_session');
 
 export const stopSubtitleSession = () => invoke<void>('stop_session');
 

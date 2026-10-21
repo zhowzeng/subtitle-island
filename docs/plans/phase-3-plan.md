@@ -98,6 +98,8 @@ Why `Ctrl+Alt+`: a global shortcut takes those keys away from every other app, a
 
 ## Milestone 1: Settings Boundary and Display Mode
 
+Status: Complete. Settings are stored in `~/.config/com.zengl.subis/settings.json` on Linux. Bilingual Mode is stored but not selectable until Milestone 3.
+
 Scope:
 
 - Add the backend settings file, `get_settings`, `save_settings`, and their capability permissions.

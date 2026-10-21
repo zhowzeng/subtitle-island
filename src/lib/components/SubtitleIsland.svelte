@@ -2,24 +2,25 @@
 	import type { SessionState } from '$lib/subtitle-session';
 	import {
 		audioSourceLabel,
+		displayModeLabel,
 		sessionStatusDetail,
 		sessionStatusTitle,
 		sourceLanguageLabel
 	} from '$lib/subtitle-session';
-	import type { AudioSource, SourceLanguage, TranscriptSegment } from '$lib/tauri';
+	import type { AudioSource, DisplayMode, SourceLanguage, TranscriptSegment } from '$lib/tauri';
 
 	type Props = {
 		sessionState: SessionState;
 		audioSource: AudioSource;
 		sourceLanguage: SourceLanguage;
-		translate: boolean;
+		displayMode: DisplayMode;
 		transcriptLines: TranscriptSegment[];
 		errorMessage: string;
 		translationFailed: boolean;
 		audioLevel: number;
 		onSelectAudioSource: (audioSource: AudioSource) => void;
 		onSelectSourceLanguage: (sourceLanguage: SourceLanguage) => void;
-		onToggleTranslate: () => void;
+		onSelectDisplayMode: (displayMode: DisplayMode) => void;
 		onStartSession: () => void;
 		onStopSession: () => void;
 		onCloseApp: () => void;
@@ -30,14 +31,14 @@
 		sessionState,
 		audioSource,
 		sourceLanguage,
-		translate,
+		displayMode,
 		transcriptLines,
 		errorMessage,
 		translationFailed,
 		audioLevel,
 		onSelectAudioSource,
 		onSelectSourceLanguage,
-		onToggleTranslate,
+		onSelectDisplayMode,
 		onStartSession,
 		onStopSession,
 		onCloseApp,
@@ -46,6 +47,8 @@
 
 	const audioSources: AudioSource[] = ['microphone', 'system'];
 	const sourceLanguages: SourceLanguage[] = ['auto', 'en', 'zh'];
+	// Bilingual Mode is selectable once its layout is rendered.
+	const displayModes: DisplayMode[] = ['original', 'chinese'];
 </script>
 
 <main class="island-shell" data-state={sessionState}>
@@ -84,14 +87,16 @@
 						>
 					{/each}
 				</div>
-				<div class="source-toggle" aria-label="Translation">
-					<button
-						type="button"
-						class:active-source={translate}
-						aria-pressed={translate}
-						disabled={sessionState === 'starting' || sessionState === 'listening'}
-						onclick={onToggleTranslate}>Translate</button
-					>
+				<div class="source-toggle" aria-label="Display Mode">
+					{#each displayModes as mode}
+						<button
+							type="button"
+							class:active-source={displayMode === mode}
+							aria-pressed={displayMode === mode}
+							disabled={sessionState === 'starting' || sessionState === 'listening'}
+							onclick={() => onSelectDisplayMode(mode)}>{displayModeLabel(mode)}</button
+						>
+					{/each}
 				</div>
 				<div class="control-row" aria-label="Session controls">
 					<button

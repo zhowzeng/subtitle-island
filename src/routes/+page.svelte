@@ -12,22 +12,26 @@
 	import {
 		beginSubtitleIslandDrag,
 		closeApp as closeSubIs,
+		defaultSettings,
+		getSettings,
 		isTauriRuntime,
 		listenForAudioActivity,
 		listenForSessionErrors,
 		listenForTranscriptUpdates,
 		listenForTranslationErrors,
+		saveSettings,
 		startSubtitleSession,
 		stopSubtitleSession,
 		type AudioSource,
+		type DisplayMode,
+		type Settings,
 		type SourceLanguage,
 		type TranscriptSegment
 	} from '$lib/tauri';
 
 	let sessionState: SessionState = $state('idle');
-	let audioSource: AudioSource = $state('microphone');
-	let sourceLanguage: SourceLanguage = $state('auto');
-	let translate = $state(false);
+	let settings: Settings = $state({ ...defaultSettings });
+	let settingsSaved: Promise<void> = Promise.resolve();
 	let transcriptLines: TranscriptSegment[] = $state([]);
 	let errorMessage = $state('');
 	let translationFailed = $state(false);
@@ -42,7 +46,7 @@
 		if (segment.translation) {
 			translationFailed = false;
 		}
-		if (translate && !isChineseModeSegment(segment)) {
+		if (settings.displayMode === 'chinese' && !isChineseModeSegment(segment)) {
 			return;
 		}
 		transcriptLines = visibleTranscriptSegments(transcriptLines, segment);
@@ -64,8 +68,8 @@
 		if (!isTauriRuntime()) {
 			sessionState = 'listening';
 			stopLocalSubtitleSession = startLocalSubtitleSession({
-				audioSource,
-				translate,
+				audioSource: settings.audioSource,
+				translate: settings.displayMode !== 'original',
 				pushTranscript,
 				setAudioLevel: (level) => {
 					audioLevel = level;
@@ -75,7 +79,9 @@
 		}
 
 		try {
-			await startSubtitleSession({ audioSource, sourceLanguage, translate });
+			// The backend starts from the stored settings, so wait for the latest save.
+			await settingsSaved;
+			await startSubtitleSession();
 			sessionState = 'listening';
 		} catch (error) {
 			sessionState = 'error';
@@ -83,28 +89,19 @@
 		}
 	}
 
-	function selectAudioSource(nextAudioSource: AudioSource) {
+	function updateSettings(nextSettings: Partial<Settings>) {
 		if (sessionState === 'starting' || sessionState === 'listening') {
 			return;
 		}
 
-		audioSource = nextAudioSource;
-	}
+		settings = { ...settings, ...nextSettings };
 
-	function selectSourceLanguage(nextSourceLanguage: SourceLanguage) {
-		if (sessionState === 'starting' || sessionState === 'listening') {
-			return;
+		if (isTauriRuntime()) {
+			settingsSaved = saveSettings(settings).catch((error) => {
+				sessionState = 'error';
+				errorMessage = conciseSessionErrorMessage(error instanceof Error ? error.message : String(error));
+			});
 		}
-
-		sourceLanguage = nextSourceLanguage;
-	}
-
-	function toggleTranslate() {
-		if (sessionState === 'starting' || sessionState === 'listening') {
-			return;
-		}
-
-		translate = !translate;
 	}
 
 	async function stopSession() {
@@ -151,6 +148,15 @@
 		if (!isTauriRuntime()) {
 			return;
 		}
+
+		getSettings()
+			.then((storedSettings) => {
+				settings = storedSettings;
+			})
+			.catch((error) => {
+				sessionState = 'error';
+				errorMessage = conciseSessionErrorMessage(error instanceof Error ? error.message : String(error));
+			});
 
 		listenForTranscriptUpdates((segment) => {
 			pushTranscript(segment);
@@ -215,16 +221,16 @@
 
 <SubtitleIsland
 	{sessionState}
-	{audioSource}
-	{sourceLanguage}
-	{translate}
+	audioSource={settings.audioSource}
+	sourceLanguage={settings.sourceLanguage}
+	displayMode={settings.displayMode}
 	{transcriptLines}
 	{errorMessage}
 	{translationFailed}
 	{audioLevel}
-	onSelectAudioSource={selectAudioSource}
-	onSelectSourceLanguage={selectSourceLanguage}
-	onToggleTranslate={toggleTranslate}
+	onSelectAudioSource={(audioSource: AudioSource) => updateSettings({ audioSource })}
+	onSelectSourceLanguage={(sourceLanguage: SourceLanguage) => updateSettings({ sourceLanguage })}
+	onSelectDisplayMode={(displayMode: DisplayMode) => updateSettings({ displayMode })}
 	onStartSession={startSession}
 	onStopSession={stopSession}
 	onCloseApp={closeApp}

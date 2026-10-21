@@ -25,6 +25,8 @@ pub(crate) fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::start_session,
             commands::stop_session,
+            commands::get_settings,
+            commands::save_settings,
             commands::close_app,
             commands::begin_subtitle_island_drag
         ])

@@ -1,5 +1,6 @@
-use crate::session::{
-    start_subtitle_session, stop_subtitle_session, SessionState, StartSessionOptions,
+use crate::{
+    session::{start_subtitle_session, stop_subtitle_session, SessionState},
+    settings::{self, Settings},
 };
 use std::sync::Mutex;
 use tauri::State;
@@ -8,14 +9,24 @@ use tauri::State;
 pub(crate) fn start_session(
     app: tauri::AppHandle,
     state: State<'_, Mutex<SessionState>>,
-    options: Option<StartSessionOptions>,
 ) -> Result<(), String> {
-    start_subtitle_session(app, state, options.unwrap_or_default())
+    let options = settings::load_settings(&app).session_options();
+    start_subtitle_session(app, state, options)
 }
 
 #[tauri::command]
 pub(crate) fn stop_session(state: State<'_, Mutex<SessionState>>) -> Result<(), String> {
     stop_subtitle_session(state)
+}
+
+#[tauri::command]
+pub(crate) fn get_settings(app: tauri::AppHandle) -> Settings {
+    settings::load_settings(&app)
+}
+
+#[tauri::command]
+pub(crate) fn save_settings(app: tauri::AppHandle, settings: Settings) -> Result<(), String> {
+    settings::save_settings(&app, settings)
 }
 
 #[tauri::command]

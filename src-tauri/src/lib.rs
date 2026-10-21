@@ -6,6 +6,7 @@ mod events;
 mod microphone;
 mod realtime_transcription;
 mod session;
+mod settings;
 mod system_audio;
 mod translation;
 

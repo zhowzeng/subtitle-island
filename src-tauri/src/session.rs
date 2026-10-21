@@ -6,7 +6,7 @@ use crate::{
     realtime_transcription::run_realtime_transcription,
     system_audio::start_system_audio_capture,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::{
     any::Any,
     sync::{
@@ -18,7 +18,7 @@ use std::{
 };
 use tauri::State;
 
-#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub(crate) enum AudioSource {
     #[default]
@@ -42,7 +42,7 @@ impl AudioSource {
     }
 }
 
-#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub(crate) enum SourceLanguage {
     #[default]
@@ -62,14 +62,10 @@ impl SourceLanguage {
     }
 }
 
-#[derive(Clone, Copy, Default, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Copy)]
 pub(crate) struct StartSessionOptions {
-    #[serde(default)]
     pub(crate) audio_source: AudioSource,
-    #[serde(default)]
     pub(crate) source_language: SourceLanguage,
-    #[serde(default)]
     pub(crate) translate: bool,
 }
 
