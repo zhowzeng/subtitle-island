@@ -178,14 +178,27 @@ button {
 }
 
 .subtitle-lines {
-	display: grid;
-	align-content: center;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-end;
 	gap: 8px;
 	min-height: 0;
 	overflow: hidden;
+	mask-image: linear-gradient(to bottom, transparent, #000 28px);
+}
+
+/* Center lines when they fit; when they overflow, auto margins collapse and
+   flex-end keeps the newest line whole while older lines leave from the top. */
+.subtitle-lines > :first-child {
+	margin-top: auto;
+}
+
+.subtitle-lines > :last-child {
+	margin-bottom: auto;
 }
 
 .subtitle-lines p {
+	flex-shrink: 0;
 	margin: 0;
 	color: #f9fbfc;
 	font-size: clamp(20px, 4.8vw, 30px);
