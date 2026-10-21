@@ -66,7 +66,7 @@ Milestone 4 is implemented; manual Tauri check pending:
 - The Final Transcript is emitted first without `translation`, then the same Transcript Segment is emitted again with `translation` when it arrives.
 - Translation runs in a `JoinSet` on the session runtime, so Stop aborts in-flight requests.
 - Translation failures are non-fatal: the backend emits `translation-error`, the line keeps its source text, and the status shows `Translation failed` until the next translated line.
-- The Subtitle Island renders `translation` when present, otherwise the source text.
+- When Translate is on, the Subtitle Island uses Chinese Mode: it shows only lines with `translation` and Chinese source lines. The backend sets `sourceLanguage: "zh"` for Chinese text, including Partial Transcripts. Non-Chinese Partial Transcripts and Final Transcripts waiting for Translation are hidden, which trades 2-4 seconds of latency for a cleaner display. When Translate is off, the island shows source text.
 
 Not yet implemented:
 
@@ -212,7 +212,7 @@ Add Translation for final transcript text.
 - Translate final non-Chinese transcript text into Traditional Chinese used in Taiwan.
 - Attach `translation` to the same Transcript Segment payload.
 - Skip Translation when the source is Chinese or when the transcript text is empty.
-- Show source text while Translation is pending.
+- Hide non-Chinese source text while Translation is pending. Mixed source and translated lines were too noisy in manual testing.
 - Keep Translation failures visible but scoped to the session, without persisting text.
 
 ### Verification
@@ -230,7 +230,7 @@ Make the Subtitle Island display translated meeting subtitles clearly without im
 ### Scope
 
 - In Chinese Mode, render `translation` when present.
-- Render source transcript as a temporary fallback while Translation is pending.
+- Revisit a dimmed source-text placeholder only if Chinese Mode latency feels too slow.
 - Preserve only the latest visible subtitle lines.
 - Label the active Audio Source concisely.
 - Avoid full settings, shortcuts, click-through changes, or Bilingual Mode controls.
