@@ -1,5 +1,13 @@
 # Phase 2 Plan
 
+Status: Complete as of 2026-10-21.
+
+Known gaps accepted at close:
+
+- Repeated Start/Stop across Microphone Capture and System Audio Capture was not re-verified in Phase 2.
+- No 30-60 minute session was run. The longest measured session was about 8 minutes.
+- End-to-end translated subtitle latency is about 2.6 s, above the PRD target of under 2 seconds. Streaming Translation is a candidate for Phase 3.
+
 ## Goal
 
 Build meeting translation on top of the completed Phase 1 subtitle session:
