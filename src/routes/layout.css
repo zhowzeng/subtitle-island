@@ -141,6 +141,10 @@ button {
 	cursor: default;
 }
 
+.source-toggle .active-source:disabled {
+	color: #e3ebef;
+}
+
 .window-close {
 	display: inline-grid;
 	width: 28px;
