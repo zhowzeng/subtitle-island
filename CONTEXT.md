@@ -89,5 +89,5 @@ A subtitle display mode that shows both source-language text and Traditional Chi
 _Avoid_: dual mode, mixed mode
 
 **Click-Through Mode**:
-A subtitle island mode that lets pointer interactions pass through the subtitle display area to the window underneath. It does not remove the need for a separate way to control or stop the subtitle session.
+A subtitle island mode that lets pointer interactions pass through the whole subtitle island, including its controls, to the window underneath. It is left through a keyboard shortcut that the island keeps visible while the mode is on.
 _Avoid_: transparent mode, passthrough, disabled controls
