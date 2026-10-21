@@ -76,6 +76,10 @@ _Avoid_: draft translation
 Translation text derived from final transcript text for the same transcript segment.
 _Avoid_: confirmed translation
 
+**Display Mode**:
+The choice of which subtitle text a subtitle session shows: Original Mode, Chinese Mode, or Bilingual Mode. It is chosen before Start, stays fixed for the whole session, and determines whether Translation happens.
+_Avoid_: translate toggle, subtitle mode, view mode
+
 **Original Mode**:
 A subtitle display mode that shows only source-language text, even when the source language is already Chinese.
 _Avoid_: source mode, transcript mode
