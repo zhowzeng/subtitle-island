@@ -141,6 +141,10 @@ button {
 	cursor: default;
 }
 
+.source-toggle.language-toggle button {
+	min-width: 44px;
+}
+
 .source-toggle .active-source:disabled {
 	color: #e3ebef;
 }

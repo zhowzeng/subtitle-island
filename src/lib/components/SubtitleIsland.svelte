@@ -1,17 +1,24 @@
 <script lang="ts">
 	import type { SessionState } from '$lib/subtitle-session';
-	import { audioSourceLabel, sessionStatusDetail, sessionStatusTitle } from '$lib/subtitle-session';
-	import type { AudioSource, TranscriptSegment } from '$lib/tauri';
+	import {
+		audioSourceLabel,
+		sessionStatusDetail,
+		sessionStatusTitle,
+		sourceLanguageLabel
+	} from '$lib/subtitle-session';
+	import type { AudioSource, SourceLanguage, TranscriptSegment } from '$lib/tauri';
 
 	type Props = {
 		sessionState: SessionState;
 		audioSource: AudioSource;
+		sourceLanguage: SourceLanguage;
 		translate: boolean;
 		transcriptLines: TranscriptSegment[];
 		errorMessage: string;
 		translationFailed: boolean;
 		audioLevel: number;
 		onSelectAudioSource: (audioSource: AudioSource) => void;
+		onSelectSourceLanguage: (sourceLanguage: SourceLanguage) => void;
 		onToggleTranslate: () => void;
 		onStartSession: () => void;
 		onStopSession: () => void;
@@ -22,12 +29,14 @@
 	let {
 		sessionState,
 		audioSource,
+		sourceLanguage,
 		translate,
 		transcriptLines,
 		errorMessage,
 		translationFailed,
 		audioLevel,
 		onSelectAudioSource,
+		onSelectSourceLanguage,
 		onToggleTranslate,
 		onStartSession,
 		onStopSession,
@@ -36,6 +45,7 @@
 	}: Props = $props();
 
 	const audioSources: AudioSource[] = ['microphone', 'system'];
+	const sourceLanguages: SourceLanguage[] = ['auto', 'en', 'zh'];
 </script>
 
 <main class="island-shell" data-state={sessionState}>
@@ -60,6 +70,17 @@
 							aria-pressed={audioSource === source}
 							disabled={sessionState === 'starting' || sessionState === 'listening'}
 							onclick={() => onSelectAudioSource(source)}>{audioSourceLabel(source)}</button
+						>
+					{/each}
+				</div>
+				<div class="source-toggle language-toggle" aria-label="Source Language">
+					{#each sourceLanguages as language}
+						<button
+							type="button"
+							class:active-source={sourceLanguage === language}
+							aria-pressed={sourceLanguage === language}
+							disabled={sessionState === 'starting' || sessionState === 'listening'}
+							onclick={() => onSelectSourceLanguage(language)}>{sourceLanguageLabel(language)}</button
 						>
 					{/each}
 				</div>

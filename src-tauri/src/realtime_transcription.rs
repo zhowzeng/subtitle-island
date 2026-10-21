@@ -3,7 +3,7 @@ use crate::{
     events::{
         emit_transcript_segment, emit_translation_error_message, now_millis, TranscriptSegment,
     },
-    session::{send_ready_error, AudioSource, StartSessionOptions},
+    session::{send_ready_error, SourceLanguage, StartSessionOptions},
     translation::{
         is_chinese_text, needs_translation, translate_to_traditional_chinese, translation_client,
     },
@@ -43,6 +43,7 @@ pub(crate) async fn run_realtime_transcription(
 ) -> Result<(), String> {
     let StartSessionOptions {
         audio_source,
+        source_language,
         translate,
     } = options;
     let mut request = match OPENAI_REALTIME_TRANSCRIPTION_URL.into_client_request() {
@@ -124,9 +125,7 @@ pub(crate) async fn run_realtime_transcription(
                             "type": "audio/pcm",
                             "rate": OPENAI_TARGET_SAMPLE_RATE
                         },
-                        "transcription": {
-                            "model": OPENAI_TRANSCRIPTION_MODEL
-                        }
+                        "transcription": transcription_config(source_language)
                     }
                 }
             }
@@ -233,7 +232,7 @@ pub(crate) async fn run_realtime_transcription(
                         &app,
                         message,
                         &mut transcript_accumulator,
-                        audio_source,
+                        options,
                         translator.as_ref(),
                         &mut translations,
                     )?,
@@ -260,6 +259,20 @@ pub(crate) async fn run_realtime_transcription(
     Ok(())
 }
 
+fn transcription_config(source_language: SourceLanguage) -> Value {
+    let mut config = json!({ "model": OPENAI_TRANSCRIPTION_MODEL });
+    if let Some(code) = source_language.code() {
+        config["language"] = json!(code);
+    }
+    config
+}
+
+fn segment_source_language(source_language: SourceLanguage, text: &str) -> &'static str {
+    source_language
+        .code()
+        .unwrap_or_else(|| if is_chinese_text(text) { "zh" } else { "auto" })
+}
+
 fn should_commit_audio(
     has_uncommitted_audio: bool,
     buffer_started_at: Option<Instant>,
@@ -276,7 +289,7 @@ fn handle_realtime_message(
     app: &tauri::AppHandle,
     message: Message,
     transcript_accumulator: &mut HashMap<String, String>,
-    audio_source: AudioSource,
+    options: StartSessionOptions,
     translator: Option<&Translator>,
     translations: &mut JoinSet<()>,
 ) -> Result<(), String> {
@@ -300,7 +313,7 @@ fn handle_realtime_message(
             if !delta.is_empty() {
                 let transcript =
                     accumulated_transcript_delta(&value, delta, transcript_accumulator);
-                emit_live_subtitle(app, &value, transcript, false, audio_source);
+                emit_live_subtitle(app, &value, transcript, false, options);
             }
         }
         "conversation.item.input_audio_transcription.completed" => {
@@ -309,8 +322,10 @@ fn handle_realtime_message(
                 .and_then(Value::as_str)
                 .unwrap_or_default();
             if !transcript.is_empty() {
-                let segment = emit_live_subtitle(app, &value, transcript, true, audio_source);
-                if let Some(translator) = translator.filter(|_| needs_translation(&segment.text)) {
+                let segment = emit_live_subtitle(app, &value, transcript, true, options);
+                if let Some(translator) = translator
+                    .filter(|_| needs_translation(&segment.source_language, &segment.text))
+                {
                     translations.spawn(translator.translate_segment(app.clone(), segment));
                 }
             }
@@ -354,14 +369,14 @@ fn emit_live_subtitle(
     event: &Value,
     text: &str,
     is_final: bool,
-    audio_source: AudioSource,
+    options: StartSessionOptions,
 ) -> TranscriptSegment {
     let segment = TranscriptSegment {
         id: transcript_segment_id(event),
-        audio_source: audio_source.as_str(),
+        audio_source: options.audio_source.as_str(),
         text: text.to_string(),
         translation: None,
-        source_language: if is_chinese_text(text) { "zh" } else { "auto" }.to_string(),
+        source_language: segment_source_language(options.source_language, text).to_string(),
         is_final,
         timestamp: now_millis(),
     };
@@ -405,6 +420,29 @@ impl Translator {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn transcription_config_sets_selected_language() {
+        assert_eq!(
+            transcription_config(SourceLanguage::En),
+            json!({ "model": OPENAI_TRANSCRIPTION_MODEL, "language": "en" })
+        );
+        assert_eq!(
+            transcription_config(SourceLanguage::Auto),
+            json!({ "model": OPENAI_TRANSCRIPTION_MODEL })
+        );
+    }
+
+    #[test]
+    fn segment_source_language_prefers_selected_language() {
+        assert_eq!(segment_source_language(SourceLanguage::Zh, "OK"), "zh");
+        assert_eq!(segment_source_language(SourceLanguage::En, "你好"), "en");
+        assert_eq!(segment_source_language(SourceLanguage::Auto, "你好"), "zh");
+        assert_eq!(
+            segment_source_language(SourceLanguage::Auto, "hello"),
+            "auto"
+        );
+    }
 
     #[test]
     fn transcription_deltas_accumulate_by_item_id() {

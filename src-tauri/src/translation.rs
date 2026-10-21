@@ -14,8 +14,8 @@ pub(crate) fn translation_client() -> Result<reqwest::Client, String> {
         .map_err(|error| format!("Could not prepare Translation client: {error}"))
 }
 
-pub(crate) fn needs_translation(text: &str) -> bool {
-    text.chars().any(char::is_alphabetic) && !is_chinese_text(text)
+pub(crate) fn needs_translation(source_language: &str, text: &str) -> bool {
+    source_language != "zh" && text.chars().any(char::is_alphabetic)
 }
 
 pub(crate) async fn translate_to_traditional_chinese(
@@ -116,22 +116,24 @@ mod tests {
     use super::*;
 
     #[test]
-    fn chinese_text_skips_translation() {
-        assert!(!needs_translation("今天的會議先到這裡。"));
-        assert!(!needs_translation("我們用 API 來做 demo"));
+    fn chinese_text_is_detected() {
+        assert!(is_chinese_text("今天的會議先到這裡。"));
+        assert!(is_chinese_text("我們用 API 來做 demo"));
     }
 
     #[test]
-    fn non_chinese_text_needs_translation() {
-        assert!(needs_translation("Let's wrap up the meeting."));
-        assert!(needs_translation("今日は会議です。"));
-        assert!(needs_translation("안녕하세요"));
+    fn non_chinese_text_is_not_detected_as_chinese() {
+        assert!(!is_chinese_text("Let's wrap up the meeting."));
+        assert!(!is_chinese_text("今日は会議です。"));
+        assert!(!is_chinese_text("안녕하세요"));
     }
 
     #[test]
-    fn empty_text_skips_translation() {
-        assert!(!needs_translation("  "));
-        assert!(!needs_translation("..."));
+    fn chinese_or_empty_text_skips_translation() {
+        assert!(!needs_translation("zh", "Let's wrap up."));
+        assert!(!needs_translation("auto", "  "));
+        assert!(!needs_translation("en", "..."));
+        assert!(needs_translation("auto", "Let's wrap up."));
     }
 
     #[test]

@@ -42,11 +42,33 @@ impl AudioSource {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum SourceLanguage {
+    #[default]
+    Auto,
+    En,
+    Zh,
+}
+
+impl SourceLanguage {
+    /// ISO-639-1 code sent to transcription, or `None` for auto-detect.
+    pub(crate) fn code(self) -> Option<&'static str> {
+        match self {
+            SourceLanguage::Auto => None,
+            SourceLanguage::En => Some("en"),
+            SourceLanguage::Zh => Some("zh"),
+        }
+    }
+}
+
 #[derive(Clone, Copy, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct StartSessionOptions {
     #[serde(default)]
     pub(crate) audio_source: AudioSource,
+    #[serde(default)]
+    pub(crate) source_language: SourceLanguage,
     #[serde(default)]
     pub(crate) translate: bool,
 }

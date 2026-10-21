@@ -20,11 +20,13 @@
 		startSubtitleSession,
 		stopSubtitleSession,
 		type AudioSource,
+		type SourceLanguage,
 		type TranscriptSegment
 	} from '$lib/tauri';
 
 	let sessionState: SessionState = $state('idle');
 	let audioSource: AudioSource = $state('microphone');
+	let sourceLanguage: SourceLanguage = $state('auto');
 	let translate = $state(false);
 	let transcriptLines: TranscriptSegment[] = $state([]);
 	let errorMessage = $state('');
@@ -73,7 +75,7 @@
 		}
 
 		try {
-			await startSubtitleSession({ audioSource, translate });
+			await startSubtitleSession({ audioSource, sourceLanguage, translate });
 			sessionState = 'listening';
 		} catch (error) {
 			sessionState = 'error';
@@ -87,6 +89,14 @@
 		}
 
 		audioSource = nextAudioSource;
+	}
+
+	function selectSourceLanguage(nextSourceLanguage: SourceLanguage) {
+		if (sessionState === 'starting' || sessionState === 'listening') {
+			return;
+		}
+
+		sourceLanguage = nextSourceLanguage;
 	}
 
 	function toggleTranslate() {
@@ -206,12 +216,14 @@
 <SubtitleIsland
 	{sessionState}
 	{audioSource}
+	{sourceLanguage}
 	{translate}
 	{transcriptLines}
 	{errorMessage}
 	{translationFailed}
 	{audioLevel}
 	onSelectAudioSource={selectAudioSource}
+	onSelectSourceLanguage={selectSourceLanguage}
 	onToggleTranslate={toggleTranslate}
 	onStartSession={startSession}
 	onStopSession={stopSession}

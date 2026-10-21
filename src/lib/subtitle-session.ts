@@ -1,4 +1,4 @@
-import type { AudioActivity, AudioSource, TranscriptSegment } from './tauri';
+import type { AudioActivity, AudioSource, SourceLanguage, TranscriptSegment } from './tauri';
 
 export type SessionState = 'idle' | 'starting' | 'listening' | 'error';
 
@@ -12,6 +12,12 @@ export function sessionStatusTitle(sessionState: SessionState) {
 export function audioSourceLabel(audioSource: AudioSource) {
 	if (audioSource === 'system') return 'System Audio';
 	return 'Microphone';
+}
+
+export function sourceLanguageLabel(sourceLanguage: SourceLanguage) {
+	if (sourceLanguage === 'en') return 'EN';
+	if (sourceLanguage === 'zh') return 'ZH';
+	return 'Auto';
 }
 
 export function sessionStatusDetail(

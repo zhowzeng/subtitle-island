@@ -13,8 +13,11 @@ export type TranscriptSegment = {
 
 export type AudioSource = 'microphone' | 'system';
 
+export type SourceLanguage = 'auto' | 'en' | 'zh';
+
 export type StartSessionOptions = {
 	audioSource: AudioSource;
+	sourceLanguage: SourceLanguage;
 	translate: boolean;
 };
 
