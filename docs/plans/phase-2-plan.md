@@ -60,6 +60,7 @@ Verified:
 - Manual Tauri check on Linux: with Translate on, the Subtitle Island shows Traditional Chinese translated lines in Chinese Mode.
 - Manual Tauri check on Linux: Chinese source audio is not duplicated as a translation.
 - Manual Tauri check on Linux: a Translation failure shows `Translation failed` while the Subtitle Session keeps running.
+- Manual Tauri check on Linux: selecting `EN` Source Language works with `gpt-realtime-whisper`.
 
 Milestone 4 is complete:
 
@@ -71,7 +72,7 @@ Milestone 4 is complete:
 - Translation failures are non-fatal: the backend emits `translation-error`, the line keeps its source text, and the status shows `Translation failed` until the next translated line.
 - When Translate is on, the Subtitle Island uses Chinese Mode: it shows only lines with `translation` and Chinese source lines. The backend sets `sourceLanguage: "zh"` for Chinese text, including Partial Transcripts. Non-Chinese Partial Transcripts and Final Transcripts waiting for Translation are hidden, which trades 2-4 seconds of latency for a cleaner display. When Translate is off, the island shows source text.
 
-Source Language follow-up (implemented after Milestone 4; manual Tauri check pending):
+Source Language follow-up (implemented after Milestone 4):
 
 - `StartSessionOptions.sourceLanguage` accepts `auto`, `en`, or `zh` and defaults to `auto`. An `Auto | EN | ZH` toggle sets it before Start.
 - `en` and `zh` send `language` in the Realtime transcription `session.update`, which should reduce misdetected languages. `auto` keeps auto-detect.
