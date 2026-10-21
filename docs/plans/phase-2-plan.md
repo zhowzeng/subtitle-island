@@ -57,8 +57,9 @@ Verified:
 - From `src-tauri/`: `cargo test --locked`
 - Manual Tauri check: Microphone Capture and System Audio Capture both work.
 - Manual Tauri check on Linux: System Audio Capture produces Live Subtitle text, partial text is replaced by final text, and Stop during playback does not hang.
+- Manual Tauri check on Linux: with Translate on, the Subtitle Island shows Traditional Chinese translated lines in Chinese Mode.
 
-Milestone 4 is implemented; manual Tauri check pending:
+Milestone 4 is complete:
 
 - Translation is opt-in per Subtitle Session: `StartSessionOptions.translate` defaults to `false`, and a `Translate` toggle next to the Audio Source control sets it before Start. When it is off, the backend makes no Translation requests.
 - `translation.rs` translates Final Transcript text into Traditional Chinese through the OpenAI Responses API with `gpt-6-luna`, reusing the session API key.
@@ -202,7 +203,7 @@ Prove that System Audio Capture can use the existing Realtime transcription path
 
 ## Milestone 4: Final Transcript Translation
 
-Status: Implemented; manual Tauri check pending.
+Status: Complete.
 
 Add Translation for final transcript text.
 
