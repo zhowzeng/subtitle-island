@@ -6,10 +6,13 @@
 	type Props = {
 		sessionState: SessionState;
 		audioSource: AudioSource;
+		translate: boolean;
 		transcriptLines: TranscriptSegment[];
 		errorMessage: string;
+		translationFailed: boolean;
 		audioLevel: number;
 		onSelectAudioSource: (audioSource: AudioSource) => void;
+		onToggleTranslate: () => void;
 		onStartSession: () => void;
 		onStopSession: () => void;
 		onCloseApp: () => void;
@@ -19,10 +22,13 @@
 	let {
 		sessionState,
 		audioSource,
+		translate,
 		transcriptLines,
 		errorMessage,
+		translationFailed,
 		audioLevel,
 		onSelectAudioSource,
+		onToggleTranslate,
 		onStartSession,
 		onStopSession,
 		onCloseApp,
@@ -45,7 +51,7 @@
 				<span>{sessionStatusTitle(sessionState)}</span>
 			</div>
 			<div class="window-actions">
-				<span class="audio-source-label">{sessionStatusDetail(sessionState, audioLevel, audioSource)}</span>
+				<span class="audio-source-label">{sessionStatusDetail(sessionState, audioLevel, audioSource, translationFailed)}</span>
 				<div class="source-toggle" aria-label="Audio Source">
 					{#each audioSources as source}
 						<button
@@ -56,6 +62,15 @@
 							onclick={() => onSelectAudioSource(source)}>{audioSourceLabel(source)}</button
 						>
 					{/each}
+				</div>
+				<div class="source-toggle" aria-label="Translation">
+					<button
+						type="button"
+						class:active-source={translate}
+						aria-pressed={translate}
+						disabled={sessionState === 'starting' || sessionState === 'listening'}
+						onclick={onToggleTranslate}>Translate</button
+					>
 				</div>
 				<div class="control-row" aria-label="Session controls">
 					<button
@@ -80,7 +95,7 @@
 				<p class="muted-line">Ready for live subtitles.</p>
 			{:else}
 				{#each transcriptLines as line (line.id)}
-					<p class:final-line={line.isFinal}>{line.text}</p>
+					<p class:final-line={line.isFinal}>{line.translation ?? line.text}</p>
 				{/each}
 			{/if}
 		</div>

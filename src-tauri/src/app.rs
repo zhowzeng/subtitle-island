@@ -4,6 +4,7 @@ use tauri::Manager;
 
 pub(crate) fn run() {
     init_tracing();
+    let _ = rustls::crypto::ring::default_provider().install_default();
 
     tauri::Builder::default()
         .manage(Mutex::new(SessionState::default()))

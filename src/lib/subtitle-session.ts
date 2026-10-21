@@ -17,13 +17,16 @@ export function audioSourceLabel(audioSource: AudioSource) {
 export function sessionStatusDetail(
 	sessionState: SessionState,
 	audioLevel: number,
-	audioSource: AudioSource
+	audioSource: AudioSource,
+	translationFailed: boolean
 ) {
 	const sourceLabel = audioSourceLabel(audioSource);
 
 	if (sessionState === 'starting') return 'Connecting API';
-	if (sessionState === 'listening')
-		return `${sourceLabel} ${Math.round(audioLevel * 100)}% - API connected`;
+	if (sessionState === 'listening') {
+		const apiStatus = translationFailed ? 'Translation failed' : 'API connected';
+		return `${sourceLabel} ${Math.round(audioLevel * 100)}% - ${apiStatus}`;
+	}
 	if (sessionState === 'error') return 'Session stopped';
 	return `${sourceLabel} ready`;
 }

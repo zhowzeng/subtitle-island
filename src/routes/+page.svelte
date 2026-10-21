@@ -15,6 +15,7 @@
 		listenForAudioActivity,
 		listenForSessionErrors,
 		listenForTranscriptUpdates,
+		listenForTranslationErrors,
 		startSubtitleSession,
 		stopSubtitleSession,
 		type AudioSource,
@@ -23,15 +24,21 @@
 
 	let sessionState: SessionState = $state('idle');
 	let audioSource: AudioSource = $state('microphone');
+	let translate = $state(false);
 	let transcriptLines: TranscriptSegment[] = $state([]);
 	let errorMessage = $state('');
+	let translationFailed = $state(false);
 	let audioLevel = $state(0);
 	let stopLocalSubtitleSession: (() => void) | undefined;
 	let unlistenTranscript: (() => void) | undefined;
 	let unlistenAudioActivity: (() => void) | undefined;
 	let unlistenSessionError: (() => void) | undefined;
+	let unlistenTranslationError: (() => void) | undefined;
 
 	function pushTranscript(segment: TranscriptSegment) {
+		if (segment.translation) {
+			translationFailed = false;
+		}
 		transcriptLines = visibleTranscriptSegments(transcriptLines, segment);
 	}
 
@@ -43,6 +50,7 @@
 
 	async function startSession() {
 		errorMessage = '';
+		translationFailed = false;
 		transcriptLines = [];
 		audioLevel = 0;
 		sessionState = 'starting';
@@ -51,6 +59,7 @@
 			sessionState = 'listening';
 			stopLocalSubtitleSession = startLocalSubtitleSession({
 				audioSource,
+				translate,
 				pushTranscript,
 				setAudioLevel: (level) => {
 					audioLevel = level;
@@ -60,7 +69,7 @@
 		}
 
 		try {
-			await startSubtitleSession({ audioSource });
+			await startSubtitleSession({ audioSource, translate });
 			sessionState = 'listening';
 		} catch (error) {
 			sessionState = 'error';
@@ -74,6 +83,14 @@
 		}
 
 		audioSource = nextAudioSource;
+	}
+
+	function toggleTranslate() {
+		if (sessionState === 'starting' || sessionState === 'listening') {
+			return;
+		}
+
+		translate = !translate;
 	}
 
 	async function stopSession() {
@@ -156,12 +173,24 @@
 				errorMessage = conciseSessionErrorMessage(error instanceof Error ? error.message : String(error));
 			});
 
+		listenForTranslationErrors(() => {
+			translationFailed = true;
+		})
+			.then((unlisten) => {
+				unlistenTranslationError = unlisten;
+			})
+			.catch((error) => {
+				sessionState = 'error';
+				errorMessage = conciseSessionErrorMessage(error instanceof Error ? error.message : String(error));
+			});
+
 		return () => {
 			stopLocalSession();
 			void stopSubtitleSession().catch(() => undefined);
 			unlistenTranscript?.();
 			unlistenAudioActivity?.();
 			unlistenSessionError?.();
+			unlistenTranslationError?.();
 		};
 	});
 </script>
@@ -173,10 +202,13 @@
 <SubtitleIsland
 	{sessionState}
 	{audioSource}
+	{translate}
 	{transcriptLines}
 	{errorMessage}
+	{translationFailed}
 	{audioLevel}
 	onSelectAudioSource={selectAudioSource}
+	onToggleTranslate={toggleTranslate}
 	onStartSession={startSession}
 	onStopSession={stopSession}
 	onCloseApp={closeApp}

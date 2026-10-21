@@ -23,6 +23,8 @@ pub(crate) struct TranscriptSegment {
     pub(crate) id: String,
     pub(crate) audio_source: &'static str,
     pub(crate) text: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) translation: Option<String>,
     pub(crate) source_language: String,
     pub(crate) is_final: bool,
     pub(crate) timestamp: u128,
@@ -42,6 +44,11 @@ pub(crate) fn log_session_error(message: &str) {
 pub(crate) fn emit_session_error_message(app: &tauri::AppHandle, message: String) {
     log_session_error(&message);
     let _ = app.emit("session-error", SessionError { message });
+}
+
+pub(crate) fn emit_translation_error_message(app: &tauri::AppHandle, message: String) {
+    log_session_error(&message);
+    let _ = app.emit("translation-error", SessionError { message });
 }
 
 pub(crate) fn emit_audio_activity(app: &tauri::AppHandle, activity: AudioActivity) {

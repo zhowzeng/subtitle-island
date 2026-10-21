@@ -24,6 +24,7 @@ cpal = "0.17"
 dotenvy = "0.15.7"
 futures-util = { version = "0.3.32", features = ["sink"] }
 log = "0.4"
+reqwest = { version = "0.13.4", default-features = false, features = ["rustls-no-provider", "json"] }
 rubato = "3.0.0"
 rustls = { version = "0.23.40", default-features = false, features = ["ring", "std"] }
 serde = { version = "1", features = ["derive"] }

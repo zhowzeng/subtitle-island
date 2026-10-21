@@ -42,11 +42,13 @@ impl AudioSource {
     }
 }
 
-#[derive(Default, Deserialize)]
+#[derive(Clone, Copy, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct StartSessionOptions {
     #[serde(default)]
     pub(crate) audio_source: AudioSource,
+    #[serde(default)]
+    pub(crate) translate: bool,
 }
 
 #[derive(Default)]
@@ -117,7 +119,7 @@ pub(crate) fn start_subtitle_session(
                 Arc::clone(&worker_running),
                 audio_receiver,
                 input_sample_rate,
-                audio_source,
+                options,
                 api_key,
                 ready_sender,
             )) {

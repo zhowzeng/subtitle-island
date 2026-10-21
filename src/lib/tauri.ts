@@ -15,6 +15,7 @@ export type AudioSource = 'microphone' | 'system';
 
 export type StartSessionOptions = {
 	audioSource: AudioSource;
+	translate: boolean;
 };
 
 export type AudioActivity = {
@@ -43,6 +44,9 @@ export const listenForTranscriptUpdates = (handler: (segment: TranscriptSegment)
 
 export const listenForAudioActivity = (handler: (activity: AudioActivity) => void) =>
 	listen<AudioActivity>('audio-activity', (event) => handler(event.payload));
+
+export const listenForTranslationErrors = (handler: (error: SessionError) => void) =>
+	listen<SessionError>('translation-error', (event) => handler(event.payload));
 
 export const listenForSessionErrors = (handler: (error: SessionError) => void) =>
 	listen<SessionError>('session-error', (event) => handler(event.payload));

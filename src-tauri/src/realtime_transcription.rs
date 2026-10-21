@@ -1,7 +1,10 @@
 use crate::{
     audio::{samples_contain_speech, AudioChunk, AudioNormalizer, OPENAI_TARGET_SAMPLE_RATE},
-    events::{emit_transcript_segment, now_millis, TranscriptSegment},
-    session::{send_ready_error, AudioSource},
+    events::{
+        emit_transcript_segment, emit_translation_error_message, now_millis, TranscriptSegment,
+    },
+    session::{send_ready_error, AudioSource, StartSessionOptions},
+    translation::{needs_translation, translate_to_traditional_chinese, translation_client},
 };
 use base64::{engine::general_purpose::STANDARD as BASE64_STANDARD, Engine};
 use futures_util::{SinkExt, StreamExt};
@@ -15,6 +18,7 @@ use std::{
     },
     time::{Duration, Instant},
 };
+use tokio::task::JoinSet;
 use tokio_tungstenite::{
     connect_async,
     tungstenite::{client::IntoClientRequest, http::HeaderValue, protocol::Message},
@@ -31,10 +35,14 @@ pub(crate) async fn run_realtime_transcription(
     running: Arc<AtomicBool>,
     audio_receiver: Receiver<AudioChunk>,
     input_sample_rate: u32,
-    audio_source: AudioSource,
+    options: StartSessionOptions,
     api_key: String,
     ready_sender: Sender<Result<(), String>>,
 ) -> Result<(), String> {
+    let StartSessionOptions {
+        audio_source,
+        translate,
+    } = options;
     let mut request = match OPENAI_REALTIME_TRANSCRIPTION_URL.into_client_request() {
         Ok(request) => request,
         Err(error) => {
@@ -85,6 +93,23 @@ pub(crate) async fn run_realtime_transcription(
             return Ok(());
         }
     };
+    let translator = if translate {
+        match translation_client() {
+            Ok(client) => Some(Translator {
+                client,
+                api_key,
+                running: Arc::clone(&running),
+            }),
+            Err(error) => {
+                send_ready_error(&ready_sender, error);
+                return Ok(());
+            }
+        }
+    } else {
+        None
+    };
+    // Dropping the JoinSet aborts in-flight Translation when the session ends.
+    let mut translations = JoinSet::new();
 
     let session_update = writer.send(Message::Text(
         json!({
@@ -134,6 +159,8 @@ pub(crate) async fn run_realtime_transcription(
     let mut last_voice_at = None;
 
     while running.load(Ordering::SeqCst) {
+        while translations.try_join_next().is_some() {}
+
         loop {
             match audio_receiver.try_recv() {
                 Ok(chunk) => {
@@ -205,6 +232,8 @@ pub(crate) async fn run_realtime_transcription(
                         message,
                         &mut transcript_accumulator,
                         audio_source,
+                        translator.as_ref(),
+                        &mut translations,
                     )?,
                     Some(Err(error)) => return Err(format!("OpenAI Realtime connection failed: {error}")),
                     None => return Err("OpenAI Realtime connection closed.".to_string()),
@@ -246,6 +275,8 @@ fn handle_realtime_message(
     message: Message,
     transcript_accumulator: &mut HashMap<String, String>,
     audio_source: AudioSource,
+    translator: Option<&Translator>,
+    translations: &mut JoinSet<()>,
 ) -> Result<(), String> {
     let Message::Text(text) = message else {
         return Ok(());
@@ -276,7 +307,10 @@ fn handle_realtime_message(
                 .and_then(Value::as_str)
                 .unwrap_or_default();
             if !transcript.is_empty() {
-                emit_live_subtitle(app, &value, transcript, true, audio_source);
+                let segment = emit_live_subtitle(app, &value, transcript, true, audio_source);
+                if let Some(translator) = translator.filter(|_| needs_translation(&segment.text)) {
+                    translations.spawn(translator.translate_segment(app.clone(), segment));
+                }
             }
             transcript_accumulator.remove(&transcript_segment_id(&value));
         }
@@ -319,18 +353,51 @@ fn emit_live_subtitle(
     text: &str,
     is_final: bool,
     audio_source: AudioSource,
-) {
-    emit_transcript_segment(
-        app,
-        TranscriptSegment {
-            id: transcript_segment_id(event),
-            audio_source: audio_source.as_str(),
-            text: text.to_string(),
-            source_language: "auto".to_string(),
-            is_final,
-            timestamp: now_millis(),
-        },
-    );
+) -> TranscriptSegment {
+    let segment = TranscriptSegment {
+        id: transcript_segment_id(event),
+        audio_source: audio_source.as_str(),
+        text: text.to_string(),
+        translation: None,
+        source_language: "auto".to_string(),
+        is_final,
+        timestamp: now_millis(),
+    };
+    emit_transcript_segment(app, segment.clone());
+    segment
+}
+
+struct Translator {
+    client: reqwest::Client,
+    api_key: String,
+    running: Arc<AtomicBool>,
+}
+
+impl Translator {
+    fn translate_segment(
+        &self,
+        app: tauri::AppHandle,
+        mut segment: TranscriptSegment,
+    ) -> impl std::future::Future<Output = ()> + Send + 'static {
+        let client = self.client.clone();
+        let api_key = self.api_key.clone();
+        let running = Arc::clone(&self.running);
+
+        async move {
+            let result = translate_to_traditional_chinese(&client, &api_key, &segment.text).await;
+            if !running.load(Ordering::SeqCst) {
+                return;
+            }
+
+            match result {
+                Ok(translation) => {
+                    segment.translation = Some(translation);
+                    emit_transcript_segment(&app, segment);
+                }
+                Err(error) => emit_translation_error_message(&app, error),
+            }
+        }
+    }
 }
 
 #[cfg(test)]
