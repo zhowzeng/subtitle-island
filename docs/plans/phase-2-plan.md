@@ -58,6 +58,8 @@ Verified:
 - Manual Tauri check: Microphone Capture and System Audio Capture both work.
 - Manual Tauri check on Linux: System Audio Capture produces Live Subtitle text, partial text is replaced by final text, and Stop during playback does not hang.
 - Manual Tauri check on Linux: with Translate on, the Subtitle Island shows Traditional Chinese translated lines in Chinese Mode.
+- Manual Tauri check on Linux: Chinese source audio is not duplicated as a translation.
+- Manual Tauri check on Linux: a Translation failure shows `Translation failed` while the Subtitle Session keeps running.
 
 Milestone 4 is complete:
 
