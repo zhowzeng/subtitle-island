@@ -80,10 +80,22 @@ Source Language follow-up (implemented after Milestone 4):
 - Simplified Chinese output from Chinese source audio is out of scope; the main use is English to Traditional Chinese.
 - The active Audio Source and Source Language buttons stay highlighted while a session is running.
 
-Not yet implemented:
+Milestone 5 is complete: Chinese Mode renders `translation`, mocked translated lines fit the island, and active controls stay labeled during a session.
 
-- Chinese Mode display polish and mocked translated lines (Milestone 5).
-- Long-session hardening and latency measurement.
+Milestone 6 hardening (Linux, release build):
+
+- Realtime shutdown is bounded to 1 second, so a stalled connection cannot hang Stop.
+- The backend logs `subis::latency` timings to stderr: `Final Transcript N ms after commit` and `Translation N ms`. Logs carry durations only, never transcript or Translation text.
+- Translation requests set `reasoning.effort` to `none`. This cut the median Translation request from about 2.6 s to about 1.75 s.
+- Measured latency from the end of speech to the translated subtitle is about 2.6 s: 350 ms silence commit delay, about 500 ms to Final Transcript, and about 1.75 s Translation. This is close to, but above, the PRD target of under 2 seconds. Continuous speech without pauses is committed every 2.5 seconds.
+- An 8-minute system audio session with Translation used about 19% of one core for `subis` and about 21% for the WebKit web process. `subis` RSS stayed flat at about 184 MB; WebKit RSS grew from 243 MB to 268 MB with the growth slowing.
+- No transcript or Translation text is written to disk: the code has no file writes or browser storage, the app data directory holds only WebKit asset cache, and the log file is empty.
+- macOS System Audio Capture remains unimplemented and is out of Phase 2 scope. `start_system_audio_capture` returns a concise error on unsupported platforms.
+
+Not verified:
+
+- A 30-60 minute session.
+- Repeated Start/Stop across Microphone Capture and System Audio Capture.
 
 ## Assumptions
 
@@ -237,6 +249,8 @@ Add Translation for final transcript text.
 
 ## Milestone 5: Subtitle Island Display for Phase 2
 
+Status: Complete.
+
 Make the Subtitle Island display translated meeting subtitles clearly without implementing full Phase 3 display modes.
 
 ### Scope
@@ -254,6 +268,8 @@ Make the Subtitle Island display translated meeting subtitles clearly without im
 - Run `bun run check`.
 
 ## Milestone 6: Phase 2 Hardening
+
+Status: Complete, except for the 30-60 minute session and repeated Start/Stop checks.
 
 Make meeting translation repeatable enough to use in real sessions.
 
