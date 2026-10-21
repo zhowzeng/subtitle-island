@@ -59,9 +59,9 @@ button {
 }
 
 .status-row {
-	justify-content: space-between;
-	row-gap: 8px;
-	flex-wrap: wrap;
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr) auto;
+	align-items: start;
 }
 
 .subtitle-island:active {

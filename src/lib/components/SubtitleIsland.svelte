@@ -80,8 +80,8 @@
 					>
 					<button type="button" onclick={onStopSession} disabled={sessionState === 'idle'}>Stop</button>
 				</div>
-				<button class="window-close" type="button" aria-label="Close app" onclick={onCloseApp}>X</button>
 			</div>
+			<button class="window-close" type="button" aria-label="Close app" onclick={onCloseApp}>X</button>
 		</div>
 
 		<div class="audio-meter" aria-label={`${audioSourceLabel(audioSource)} activity`}>
